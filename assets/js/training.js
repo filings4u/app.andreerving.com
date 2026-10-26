@@ -18,7 +18,7 @@ async function run(){
  ]);
  if(mError||lError){status.textContent='Training content could not be loaded.';return}
  document.getElementById('course-title').textContent=course?.title||'Course';
- status.textContent=(lessons?.length||0)+' lessons available';
+ const completed=(progress||[]).filter(p=>p.completed).length;status.textContent=completed+' of '+(lessons?.length||0)+' lessons completed';
  if(!modules?.length){container.append(text('p','Training modules have not yet been published.'));return}
  for(const module of modules){
   const section=document.createElement('section');section.className='item';
@@ -37,7 +37,7 @@ async function run(){
     const request=isDone?db.from('lesson_progress').update({completed:true,completed_at:new Date().toISOString()}).eq('id',isDone.id):db.from('lesson_progress').insert({user_id:user.id,course_id:courseId,lesson_id:lesson.id,completed:true,completed_at:new Date().toISOString()});
     const {error}=await request;
     if(error){button.disabled=false;status.textContent='Unable to save lesson progress.';return}
-    button.textContent='Completed';status.textContent='Progress saved.';
+    button.textContent='Completed';const current=Number(status.textContent.match(/^\d+/)?.[0]||0)+1;status.textContent=current+' of '+(lessons?.length||0)+' lessons completed';
    });
    details.append(button);section.append(details);
   }
