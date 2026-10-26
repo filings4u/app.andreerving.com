@@ -26,7 +26,7 @@ async function render(){
   const holder=byId(target);holder.replaceChildren();
   const {data,error}=await db.from(table).select(columns).limit(100);
   if(error){holder.textContent='Unable to load records.';continue}
-  if(!data?.length){holder.textContent='No records yet.';continue}
+  if(!data?.length){holder.textContent=table==='orders'?'You have no orders yet.':table==='course_enrollments'?'You are not enrolled in a course yet.': 'No documents have been shared with you yet.';if(table==='course_enrollments'){const link=document.createElement('a');link.href='https://filings4u.github.io/andreerving/get-started.html';link.textContent='Explore courses';holder.append(document.createElement('br'),link)}continue}
   for(const record of data){
    const card=document.createElement('div');card.className='item';
    const summary=document.createElement('p');summary.textContent=table==='customer_documents'?record.title:table==='orders'?record.order_number+' · '+record.status+' · $'+record.total:record.status+' course';card.append(summary);
