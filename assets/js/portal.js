@@ -6,8 +6,9 @@ const say=message=>{status.textContent=message};
 byId('login').addEventListener('submit',async event=>{
  event.preventDefault();
  const email=byId('email').value.trim();
- const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
- say(error?error.message:'Check your email for the sign-in link.');
+ const password=byId('password').value;
+ const {error}=await db.auth.signInWithPassword({email,password});
+ say(error?'Sign in failed. Check your email and password.':'Signed in.');
 });
 byId('signout').addEventListener('click',async()=>{await db.auth.signOut();location.reload()});
 async function render(){
