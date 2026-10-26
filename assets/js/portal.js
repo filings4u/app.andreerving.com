@@ -13,7 +13,7 @@ byId('login').addEventListener('submit',async event=>{
 byId('signout').addEventListener('click',async()=>{await db.auth.signOut();location.reload()});
 async function render(){
  const {data:{user}}=await db.auth.getUser();
- byId('login').hidden=!!user;byId('dashboard').hidden=!user;byId('signout').hidden=!user;
+ document.body.classList.toggle('signed-in',!!user);byId('login').hidden=!!user;byId('dashboard').hidden=!user;byId('signout').hidden=!user;
  if(!user)return;
  say('Signed in as '+user.email);
  const {data:profile}=await db.from('customer_profiles').select('full_name,phone').eq('id',user.id).maybeSingle();
