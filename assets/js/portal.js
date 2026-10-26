@@ -15,6 +15,9 @@ async function render(){
  byId('login').hidden=!!user;byId('dashboard').hidden=!user;byId('signout').hidden=!user;
  if(!user)return;
  say('Signed in as '+user.email);
+ const {data:profile}=await db.from('customer_profiles').select('full_name,phone').eq('id',user.id).maybeSingle();
+ byId('profile-name').value=profile?.full_name||'';
+ byId('profile-phone').value=profile?.phone||'';
  for(const [table,target,columns] of [
   ['orders','orders','order_number,status,total,created_at'],
   ['course_enrollments','enrollments','course_id,status,enrolled_at'],
@@ -43,3 +46,10 @@ async function render(){
 }
 db.auth.onAuthStateChange(()=>setTimeout(render,0));
 render();
+
+byId('profile-form')?.addEventListener('submit',async event=>{
+ event.preventDefault();const {data:{user}}=await db.auth.getUser();if(!user){say('Sign in before editing your profile.');return}
+ const full_name=byId('profile-name').value.trim(),phone=byId('profile-phone').value.trim();
+ const {error}=await db.from('customer_profiles').update({full_name,phone}).eq('id',user.id);
+ say(error?'Unable to save your profile.':'Your profile was saved.');
+});
