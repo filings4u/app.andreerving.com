@@ -25,8 +25,8 @@
 
 
 /* Repository brand assets used on the customer login and customer sidebar */
-.auth-brand{display:inline-flex;align-items:center;max-width:min(100%,330px);width:fit-content;text-decoration:none;background:#fff;border:1px solid #e2eaf4;border-radius:13px;padding:10px 15px;box-shadow:0 8px 25px #07172d30}
-.auth-brand .customer-login-logo{display:block;width:min(100%,290px);height:auto;max-height:90px;object-fit:contain;object-position:left center;filter:drop-shadow(0 5px 12px rgba(0,0,0,.1))}
+.auth-brand{display:inline-flex;align-items:center;max-width:min(100%,410px);width:fit-content;text-decoration:none;background:transparent;border:0;border-radius:0;padding:0;box-shadow:none}
+.auth-brand .customer-login-logo{display:block;width:min(100%,380px);height:auto;max-height:115px;object-fit:contain;object-position:left center}
 .student-brand{min-height:73px}
 .student-brand .customer-sidebar-logo{display:block;max-width:150px;width:100%;height:auto;max-height:68px;object-fit:contain;object-position:left center;flex:0 1 auto}
 .student-brand .student-brand-name{display:block;font-size:9px;letter-spacing:.09em;color:#b2c5dd;white-space:nowrap}
