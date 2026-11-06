@@ -22,3 +22,12 @@
 .student-toast-dismiss{border:0;background:transparent;color:#fff;font-size:23px;margin-left:auto;padding:0 4px;cursor:pointer}
 #toast.error{border-color:#d16f76}
 @media(max-width:740px){#student-nav a{width:auto;flex:none;white-space:nowrap}}
+
+
+/* Repository brand assets used on the customer login and customer sidebar */
+.auth-brand{display:flex;align-items:center;max-width:min(100%,330px);text-decoration:none}
+.auth-brand .customer-login-logo{display:block;width:min(100%,290px);height:auto;max-height:90px;object-fit:contain;object-position:left center;filter:drop-shadow(0 5px 12px rgba(0,0,0,.1))}
+.student-brand{min-height:73px}
+.student-brand .customer-sidebar-logo{display:block;max-width:150px;width:100%;height:auto;max-height:68px;object-fit:contain;object-position:left center;flex:0 1 auto}
+.student-brand .student-brand-name{display:block;font-size:9px;letter-spacing:.09em;color:#b2c5dd;white-space:nowrap}
+@media(max-width:740px){.auth-brand .customer-login-logo{max-width:240px;max-height:74px}.student-brand .customer-sidebar-logo{max-width:120px}}
