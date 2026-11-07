@@ -1,0 +1,71 @@
+/* Andre Erving — authenticated customer application. */
+:root{--app-navy:#10243f;--app-blue:#1e4b91;--app-gold:#c99a36;--app-surface:#fff;--app-muted:#74849a;--app-border:#dee7f1;--app-bg:#f3f6fb}
+html,body.student-app{min-height:100%;background:var(--app-bg)}
+#student-view[hidden],#login-view[hidden]{display:none!important}
+body.student-app:not(.ae-authenticated) #student-view{display:none!important}
+.student-shell{display:flex;height:100dvh;min-height:0;overflow:hidden}
+.student-sidebar{width:248px;min-width:248px;height:100dvh;background:linear-gradient(168deg,#11253f,#091a31);color:#dae6f5;display:flex;flex-direction:column;padding:22px 14px;border-right:1px solid #234061}
+.student-brand{height:76px;min-height:76px;border-bottom:1px solid #ffffff20;padding:0 11px 19px;gap:12px;align-items:center}
+.student-brand .customer-sidebar-logo{max-width:155px}
+.student-brand-name{font-size:9px;color:#c8d8ea}
+.sidebar-label{margin:27px 13px 10px;color:#84a7cc;font-size:10px;font-weight:850;letter-spacing:.15em}
+#student-nav{display:grid;align-content:start;gap:5px;min-height:0;overflow:auto;scrollbar-width:thin}
+#student-nav a{border-radius:10px;min-height:43px;padding:11px 14px;color:#c7d9eb;font-weight:700;font-size:12px;transition:background .15s,color .15s}
+#student-nav a:hover{background:#1b3657;color:#fff}
+#student-nav a.active{background:#244a75;color:#fff;box-shadow:inset 3px 0 var(--app-gold)}
+.sidebar-footer{margin-top:auto;padding:19px 12px 12px;border-top:1px solid #ffffff20}
+.sidebar-footer p{font-size:11px;overflow-wrap:anywhere}
+.student-main{flex:1;min-width:0;overflow-y:auto;overscroll-behavior:contain;background:var(--app-bg)}
+.student-topbar{position:sticky;top:0;z-index:6;height:72px;min-height:72px;background:#fff;border-bottom:1px solid var(--app-border);padding:10px clamp(22px,3vw,42px);display:flex;align-items:center;justify-content:space-between}
+.top-label{font-size:10px;color:#af7c26;letter-spacing:.13em;font-weight:800}
+.student-topbar strong{font-size:14px;color:#182f4d}
+.top-right{gap:15px;display:flex;align-items:center}
+.top-right span{font-size:11px;color:#7285a0}
+#signout{font-size:12px;border:1px solid #dbe4ef;background:#fff;color:#20456f;padding:10px 14px;border-radius:8px;font-weight:750}
+.student-content{width:100%;max-width:1450px;padding:30px clamp(18px,2.8vw,40px) 60px;margin:auto}
+.page-heading{margin-bottom:23px}
+.page-heading .eyebrow{font-size:10px;color:#b0822d;letter-spacing:.14em}
+.page-heading h1{font-size:clamp(27px,2.5vw,34px);letter-spacing:-.045em;margin:9px 0 7px;line-height:1.15}
+.page-heading p{font-size:13px;color:var(--app-muted);line-height:1.6}
+.hero{border-radius:15px;padding:28px 30px;background:linear-gradient(110deg,#122842,#224a72);box-shadow:0 14px 28px #0d284116}
+.hero h2{font-size:25px}
+.hero p{font-size:13px}
+.metric-grid,.cards,.ticket-grid{gap:16px}
+.metric,.panel,.course-card{border:1px solid var(--app-border);border-radius:13px;background:#fff;box-shadow:0 4px 18px #17364b09}
+.metric{padding:21px}
+.metric strong{font-size:29px;color:#173454}
+.panel{padding:23px 24px;margin-bottom:18px;min-width:0}
+.panel h2,.section-title{font-size:17px;letter-spacing:-.03em;color:#132e4d}
+.course-card{padding:24px;transition:border-color .15s,box-shadow .15s}
+.course-card:hover{border-color:#c8d8ea;box-shadow:0 9px 25px #0f304717}
+.course-card h3{font-size:18px;color:#142f4d}
+.course-card p{font-size:12px;line-height:1.65;min-height:22px}
+.action,button.primary{background:#2055a6;color:#fff;border-radius:9px;border:1px solid #2055a6;padding:11px 16px;min-height:42px;font-weight:800;font-size:12px;cursor:pointer}
+.action:hover,button.primary:hover{background:#163e7b;color:#fff}
+.action.secondary{background:#fff;color:#244e7c;border-color:#d5e0ef}
+.data-row{padding:19px 4px}
+.data-row strong{font-size:13px;color:#1a385a}
+.data-row p{font-size:12px}
+.empty{border:1px dashed #d7e1ed;background:#f8fafc;padding:42px 20px}
+.form-field input,.form-field select,.form-field textarea{border-radius:9px;border:1px solid #d5e0ec;min-height:46px;font-size:13px;color:#183857}
+.form-field textarea{min-height:126px;padding:13px}
+.ticket-grid{grid-template-columns:minmax(290px,.9fr) minmax(0,1.1fr);align-items:stretch}
+.ticket-grid .panel{min-width:0}
+.ticket-button{padding:15px;border-radius:9px}
+.message{border-radius:10px}
+.ae-panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:19px}
+.ae-panel-title h2{margin:0}
+.ae-count{font-size:11px;border:1px solid #dce7f3;border-radius:99px;background:#f2f6fb;color:#5e7793;font-weight:800;padding:7px 12px}
+.ae-ebook-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:16px}
+.ae-ebook-tile{display:flex;align-items:flex-start;gap:17px;padding:19px;border-radius:12px;border:1px solid var(--app-border);background:#fff}
+.ae-ebook-tile h3{font-size:14px;line-height:1.45;margin:7px 0;color:#15314e}
+.ae-ebook-tile p{font-size:11px;color:var(--app-muted)}
+.ae-ebook-tile .action{margin-top:8px}
+.ae-book-art{flex:none;width:82px;aspect-ratio:3/4;background:linear-gradient(140deg,#0e2b4f,#285587);border-radius:5px 10px 10px 5px;box-shadow:4px 5px 10px #1b355724;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f0c46b;font-size:22px;font-weight:900;border-left:5px solid #ca9a35}
+.ae-book-art span{font-size:10px;letter-spacing:.15em;color:white;margin-top:6px}
+.ae-book-eyebrow{font-size:10px;letter-spacing:.13em;color:#b18430;font-weight:800}
+.student-content .form-grid{gap:17px}
+#toast{z-index:80}
+@media(max-width:1020px){.student-sidebar{width:215px;min-width:215px}.ticket-grid{grid-template-columns:1fr}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.student-shell{display:block;height:auto;min-height:100dvh;overflow:visible}.student-sidebar{position:relative;width:100%;height:auto;min-width:0;display:block;padding:10px 14px}.student-brand{height:auto;min-height:56px;padding:5px 8px 13px}.sidebar-label,.sidebar-footer{display:none}#student-nav{display:flex;gap:5px;overflow-x:auto;padding:10px 0;scrollbar-width:thin}#student-nav a{width:auto;white-space:nowrap;flex:none}.student-main{overflow:visible}.student-topbar{height:auto;min-height:65px;padding:12px 17px}.top-right span{display:none}.student-content{padding:23px 14px 45px}.cards,.form-grid,.metric-grid{grid-template-columns:1fr}.hero{padding:23px}.panel{padding:18px}.ae-ebook-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
