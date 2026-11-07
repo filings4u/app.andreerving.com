@@ -1,4 +1,5 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import {downloadOrderReceipt} from './order-receipts.js?v=20261107';
 const db=createClient('https://gnfyidajbectlppsekzj.supabase.co','sb_publishable_DGt4HrHAwWyMt-0Xtzlfog_F18RnOyf');
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString():'—',money=(v,c='USD')=>new Intl.NumberFormat('en-US',{style:'currency',currency:c||'USD'}).format(Number(v)||0);
@@ -70,7 +71,11 @@ function dashboard(){const active=state.enrollments.filter(e=>e.status==='active
 '<h2 class="section-title">Continue learning</h2>'+(active.length?courseCards(active):'<section class="panel">'+empty('No courses assigned yet','Once you enroll in a course, it will appear here.','<div class="row-actions"><a class="action" href="https://andreerving.com/courses.html" target="_blank" rel="noopener noreferrer">Browse courses ↗</a></div>')+'</section>')+
 '<section class="panel"><h2>Quick access</h2><div class="row-actions">'+button('View all courses','courses')+button('Orders & receipts','orders')+button('My eBooks','ebooks')+button('My documents','documents')+button('Contact support','support')+'</div></section>'}
 function coursesPage(){return heading('My courses','Access your programs and track learning progress.')+(state.enrollments.length?courseCards(state.enrollments):'<section class="panel">'+empty('You are not enrolled yet','Your courses will appear here after enrollment.','<div class="row-actions"><a class="action" target="_blank" rel="noopener noreferrer" href="https://andreerving.com/courses.html">Explore courses ↗</a></div>')+'</section>')}
-function ordersPage(){return heading('Orders & purchases','Review your purchases and payment history.')+'<section class="panel"><h2>Purchase history</h2>'+(state.orders.length?'<div class="data-list">'+state.orders.map(o=>'<div class="data-row"><div><strong>'+esc(o.order_number)+'</strong><p>Placed '+esc(fmtDate(o.created_at))+'</p></div><div><strong>'+esc(money(o.total,o.currency))+'</strong><span class="tag">'+esc(o.status)+'</span></div></div>').join('')+'</div>':empty('No orders yet','Purchases will appear here when processed.'))+'</section>'}
+function ordersPage(){return heading('Orders & purchases','View your purchases and download your Andre Erving PDF receipts.')+
+ '<section class="panel ae-orders-panel"><div class="ae-orders-panel-header"><h2>Purchase history</h2><span class="ae-order-count">'+state.orders.length+' orders</span></div>'+
+ (state.orders.length?'<div class="data-list ae-orders-list">'+state.orders.map(o=>'<div class="data-row ae-order-row"><div class="ae-order-details"><strong>'+esc(o.order_number)+'</strong><p>Placed '+esc(fmtDate(o.created_at))+'</p></div><div class="ae-order-actions"><div class="ae-order-payment"><strong>'+esc(money(o.total,o.currency))+'</strong><span class="tag">'+esc(o.status)+'</span></div>'+
+ (['paid','completed'].includes(o.status)?'<button class="action secondary ae-receipt-download" type="button" data-order-receipt="'+esc(o.id)+'"><span aria-hidden="true">↓</span> Download receipt (PDF)</button>':'<span class="muted-note">Receipt available after payment</span>')+
+ '</div></div>').join('')+'</div>':empty('No orders yet','Purchases will appear here when processed.'))+'</section>'}
 function documentsPage(){return heading('My documents','Access private files shared with you.')+'<section class="panel"><h2>Secure document library</h2>'+(state.documents.length?'<div class="data-list">'+state.documents.map(d=>'<div class="data-row"><div><strong>'+esc(d.title)+'</strong><p>'+esc(d.description||d.document_type||'Document')+' · '+esc(fmtDate(d.created_at))+'</p></div><button class="action secondary" data-download="'+esc(d.id)+'">Download securely</button></div>').join('')+'</div>':empty('No shared documents','Files shared by your team will appear here.'))+'</section>'}
 function settings(){return heading('Account settings','Keep your student profile information up to date.')+'<section class="panel"><h2>Personal details</h2><form id="profile-form"><div class="form-grid"><label class="form-field">Full name<input name="full_name" maxlength="160" autocomplete="name" value="'+esc(state.profile?.full_name||'')+'"></label><label class="form-field">Phone number<input name="phone" maxlength="40" autocomplete="tel" value="'+esc(state.profile?.phone||'')+'"></label><label class="form-field wide">Account email<input type="email" disabled value="'+esc(state.user.email)+'"></label></div><div class="form-actions"><button class="primary" type="submit">Save changes</button></div></form></section><section class="panel"><h2>Security</h2><p class="muted">Use password reset to change your account password.</p><a href="reset.html" class="action secondary">Reset password</a></section>'}
 function supportPage(){const selected=state.tickets.find(t=>t.id===state.selectedTicket)||state.tickets[0];if(selected)state.selectedTicket=selected.id;return heading('Support center','Get help with courses, billing, documents, and technical issues.')+
@@ -87,8 +92,21 @@ function render(){if(!state.user)return;let page=state.page;document.body.classL
   };
   applySidebar(false);
   sidebarButton.addEventListener('click',()=>applySidebar(!document.body.classList.contains('ae-classroom-show-nav')));
- }else document.body.classList.remove('ae-classroom-show-nav');document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>go('classroom/'+b.dataset.course));document.querySelectorAll('[data-ticket]').forEach(b=>b.onclick=()=>{state.selectedTicket=b.dataset.ticket;render()});document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>download(b.dataset.download));document.querySelectorAll('[data-ebook]').forEach(b=>b.onclick=()=>downloadEbook(b.dataset.ebook));$('profile-form')?.addEventListener('submit',saveProfile);$('ticket-form')?.addEventListener('submit',createTicket);$('message-form')?.addEventListener('submit',sendMessage)}
+ }else document.body.classList.remove('ae-classroom-show-nav');document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>go('classroom/'+b.dataset.course));document.querySelectorAll('[data-ticket]').forEach(b=>b.onclick=()=>{state.selectedTicket=b.dataset.ticket;render()});document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>download(b.dataset.download));document.querySelectorAll('[data-order-receipt]').forEach(b=>b.onclick=()=>downloadReceipt(b));document.querySelectorAll('[data-ebook]').forEach(b=>b.onclick=()=>downloadEbook(b.dataset.ebook));$('profile-form')?.addEventListener('submit',saveProfile);$('ticket-form')?.addEventListener('submit',createTicket);$('message-form')?.addEventListener('submit',sendMessage)}
 function go(page){if(!state.user)return;state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;if(location.hash!=='#/'+page)history.pushState(null,'','#/'+page);render();document.querySelector('.student-main')?.scrollTo(0,0)}
+async function downloadReceipt(button){
+ const id=button.dataset.orderReceipt;
+ if(!state.orders.some(o=>o.id===id&&['paid','completed'].includes(o.status)))return notify('This order does not have a confirmed receipt.',true);
+ if(button.disabled)return;
+ button.disabled=true;
+ const label=button.innerHTML;button.textContent='Preparing PDF…';
+ try{
+  const {data:{user},error}=await db.auth.getUser();
+  if(error||!user||user.id!==state.user?.id)throw Error('Please sign in again to download your receipt.');
+  await downloadOrderReceipt(db,id,user);
+ }catch(error){notify(error.message||'Unable to download this receipt.',true)}
+ finally{button.disabled=false;button.innerHTML=label}
+}
 async function downloadEbook(id){
  const item=state.ebookOrders.find(x=>x.id===id);if(!item)return;
  const {data:{session}}=await db.auth.getSession();if(!session?.access_token)return logoutToLogin();
