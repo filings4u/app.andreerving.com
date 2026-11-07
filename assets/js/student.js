@@ -95,8 +95,8 @@ let loadingLive=false;async function refreshLive(){
 function connectLive(){
  if(state.channel)db.removeChannel(state.channel);const userId=state.user?.id;if(!userId)return;
  state.channel=db.channel('customer-'+userId)
- .on('postgres_changes',{event:'*',schema:'public',table:'orders'},refreshLive)
- .on('postgres_changes',{event:'INSERT',schema:'public',table:'order_items'},refreshLive)
+ .on('postgres_changes',{event:'*',schema:'public',table:'orders',filter:'user_id=eq.'+userId},()=>{void refreshLive();setTimeout(()=>void refreshLive(),1200)})
+ .on('postgres_changes',{event:'*',schema:'public',table:'orders',filter:'customer_email=eq.'+state.user.email.toLowerCase()},()=>{void refreshLive();setTimeout(()=>void refreshLive(),1200)})
  .on('postgres_changes',{event:'*',schema:'public',table:'course_enrollments',filter:'user_id=eq.'+userId},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'customer_documents',filter:'user_id=eq.'+userId},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'support_tickets',filter:'user_id=eq.'+userId},refreshLive)
