@@ -176,3 +176,15 @@ body.ae-classroom-route.ae-classroom-show-nav .student-sidebar{display:flex!impo
 .ae-orders-panel .ae-receipt-download:focus-visible{outline:3px solid #d6a948;outline-offset:2px}
 @media(max-width:760px){.ae-orders-panel{padding:19px 16px!important}.ae-orders-list .ae-order-row{align-items:flex-start;flex-direction:column;gap:13px}.ae-order-actions{width:100%;justify-content:space-between;gap:10px}.ae-orders-panel .ae-receipt-download{min-width:0}}
 @media(max-width:390px){.ae-order-actions{align-items:stretch;flex-direction:column}.ae-order-payment{flex-direction:row;justify-content:space-between;align-items:center}.ae-orders-panel .ae-receipt-download{width:100%}}
+
+/* Full-height classroom: hide the outer customer top bar automatically. */
+body.ae-classroom-route .student-topbar{display:none!important}
+body.ae-classroom-route .student-main{height:100dvh;min-height:0;overflow:hidden}
+body.ae-classroom-route .student-content{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding-top:12px;padding-bottom:12px}
+body.ae-classroom-route .ae-classroom-head{flex:0 0 auto}
+body.ae-classroom-route .ae-classroom-frame{flex:1 1 auto;height:auto!important;min-height:0!important}
+@media(max-width:760px){
+ body.ae-classroom-route .student-main{height:100dvh;overflow:hidden}
+ body.ae-classroom-route .student-content{height:100dvh;overflow:hidden;padding-top:10px;padding-bottom:10px}
+ body.ae-classroom-route .ae-classroom-frame{min-height:0!important;height:auto!important}
+}
