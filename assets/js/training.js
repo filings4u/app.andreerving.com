@@ -249,6 +249,7 @@ async function complete(){
    db.from('lesson_progress').insert({...value,user_id:user.id,course_id:courseId,lesson_id:lesson.id}).select('id,lesson_id,completed');
    const {data,error}=await q;if(error||!data?.length)throw error||new Error('Saving progress was not permitted');
    if(prior)prior.completed=true;else progress.push(data[0]);$('lesson-complete').textContent='✓ Completed';renderOutline();
+   if(window.parent!==window){window.parent.postMessage({type:'ae-lesson-completed',courseId,lessonId:lesson.id,completed:lessons.filter(l=>done(l.id)).length,total:lessons.length},location.origin)}
  }catch(e){message('Unable to save progress: '+e.message);$('lesson-complete').disabled=false}finally{working=false}
 }
 async function init(){
