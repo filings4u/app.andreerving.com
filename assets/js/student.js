@@ -8,9 +8,25 @@ const heading=(title,sub)=>'<div class="page-heading"><span class="eyebrow">MY A
 const empty=(title,sub,link='')=>'<div class="empty"><strong>'+esc(title)+'</strong><div>'+esc(sub)+'</div>'+link+'</div>';
 const button=(label,page)=>'<button class="action secondary" data-route="'+page+'">'+esc(label)+'</button>';
 const progressFor=id=>{const completed=state.progress.filter(p=>p.course_id===id&&p.completed).length;const total=state.courses.find(c=>c.id===id)?.lessonCount||0;return {completed,total,percentage:total?Math.min(100,Math.round(100*completed/total)):0}};
-async function read(table,columns='*',sort='created_at'){let q=db.from(table).select(columns);if(sort)q=q.order(sort,{ascending:false});const {data,error}=await q.limit(250);if(error)throw new Error(table+': '+error.message);return data||[]}
+async function read(table,columns='*',sort='created_at'){
+ if(!state.user)return [];
+ let q=db.from(table).select(columns).eq('user_id',state.user.id);
+ if(sort)q=q.order(sort,{ascending:false});
+ const {data,error}=await q.limit(250);
+ if(error)throw new Error(table+': '+error.message);
+ return data||[];
+}
+async function ownOrders(){
+ const u=state.user;if(!u)return [];
+ const columns='id,order_number,total,currency,status,created_at';
+ const byId=db.from('orders').select(columns).eq('user_id',u.id).order('created_at',{ascending:false}).limit(250);
+ const byEmail=db.from('orders').select(columns).eq('customer_email',u.email.toLowerCase()).order('created_at',{ascending:false}).limit(250);
+ const [idResult,emailResult]=await Promise.all([byId,byEmail]);
+ if(idResult.error||emailResult.error)throw Error('Unable to load purchase history');
+ return [...new Map([...(idResult.data||[]),...(emailResult.data||[])].map(row=>[row.id,row])).values()].sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
+}
 async function load(){const u=state.user;if(!u)return;const snapshotUser=u.id;
-const results=await Promise.allSettled([db.from('customer_profiles').select('full_name,phone,email').eq('id',u.id).maybeSingle(),read('orders','id,order_number,total,currency,status,created_at'),read('course_enrollments','id,course_id,status,enrolled_at,expires_at,completed_at','enrolled_at'),read('customer_documents','id,title,description,file_url,document_type,created_at'),read('lesson_progress','course_id,lesson_id,completed','updated_at'),read('support_tickets','id,subject,category,status,priority,created_at,updated_at')]);
+const results=await Promise.allSettled([db.from('customer_profiles').select('full_name,phone,email').eq('id',u.id).maybeSingle(),ownOrders(),read('course_enrollments','id,course_id,status,enrolled_at,expires_at,completed_at','enrolled_at'),read('customer_documents','id,title,description,file_url,document_type,created_at'),read('lesson_progress','course_id,lesson_id,completed','updated_at'),read('support_tickets','id,subject,category,status,priority,created_at,updated_at')]);
 if(state.user?.id!==snapshotUser)return;
 const [profile,orders,enrollments,documents,progress,tickets]=results;
 state.profile=profile.status==='fulfilled'?profile.value.data:null;
