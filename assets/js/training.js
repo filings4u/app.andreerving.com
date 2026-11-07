@@ -290,6 +290,17 @@ if(embedded){
   event.preventDefault();window.parent.postMessage({type:'ae-player-exit'},location.origin);
  }));
 }
+const focusToggle=$('ae-focus-toggle');
+if(focusToggle){
+ focusToggle.removeAttribute('aria-expanded');
+ focusToggle.setAttribute('aria-pressed','false');
+ focusToggle.addEventListener('click',()=>{
+  const focused=document.body.classList.toggle('ae-focus-mode');
+  focusToggle.textContent=focused?'Show panels':'Hide panels';
+  focusToggle.setAttribute('aria-pressed',String(focused));
+  focusToggle.setAttribute('aria-label',focused?'Show course outline and lesson tools':'Hide course outline and lesson tools to expand lesson');
+ });
+}
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='SIGNED_OUT'||event==='USER_DELETED'||(event==='TOKEN_REFRESHED'&&!session)){
   document.body.classList.remove('ae-classroom-authorized');
