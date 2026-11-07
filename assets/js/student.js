@@ -3,7 +3,7 @@ import {downloadOrderReceipt} from './order-receipts.js?v=20261107';
 const db=createClient('https://gnfyidajbectlppsekzj.supabase.co','sb_publishable_DGt4HrHAwWyMt-0Xtzlfog_F18RnOyf');
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString():'—',money=(v,c='USD')=>new Intl.NumberFormat('en-US',{style:'currency',currency:c||'USD'}).format(Number(v)||0);
-const state={user:null,page:'dashboard',profile:null,orders:[],enrollments:[],courses:[],documents:[],progress:[],tickets:[],selectedTicket:null,loaded:false,refreshing:false,ebookOrders:[],channel:null,messageChannel:null};
+const state={user:null,page:'dashboard',profile:null,orders:[],enrollments:[],courses:[],documents:[],progress:[],tickets:[],selectedTicket:null,loaded:false,refreshing:false,ebookOrders:[],extensionPrices:{},channel:null,messageChannel:null};
 function notify(message,error=false){const n=$('toast');n.querySelector('.student-toast-content').textContent=message;n.className='visible'+(error?' error':'');n.querySelector('.student-toast-dismiss').onclick=()=>{n.className=''};setTimeout(()=>{if(n.querySelector('.student-toast-content').textContent===message)n.className=''},4200)}
 const heading=(title,sub)=>'<div class="page-heading"><span class="eyebrow">MY ACCOUNT / '+esc(title.toUpperCase())+'</span><h1>'+esc(title)+'</h1><p>'+esc(sub)+'</p></div>';
 const empty=(title,sub,link='')=>'<div class="empty"><strong>'+esc(title)+'</strong><div>'+esc(sub)+'</div>'+link+'</div>';
@@ -50,11 +50,23 @@ const lessonRows=[];
   }
  }
  state.courses.forEach(course=>{course.lessonIds=[...new Set(lessonRows.filter(l=>l.course_id===course.id).map(l=>l.id))];course.lessonCount=course.lessonIds.length})}
+if(ids.length){
+ const prices=await db.from('course_extension_prices').select('course_id,amount,enabled,days').in('course_id',ids);
+ if(!prices.error)state.extensionPrices=Object.fromEntries((prices.data||[]).map(x=>[x.course_id,x]));
+ else console.warn('Extension pricing unavailable',prices.error);
+}else state.extensionPrices={};
 state.enrollments=state.enrollments.filter(e=>e.course_id!=='e2bbeac6-c901-4f03-816c-ab25958cbc43');
 state.courses=state.courses.filter(c=>c.id!=='e2bbeac6-c901-4f03-816c-ab25958cbc43');
 state.loaded=true;
 }
-function courseCards(items){return '<div class="cards">'+items.map(e=>{const c=state.courses.find(c=>c.id===e.course_id);const p=progressFor(e.course_id);return '<article class="course-card"><span class="tag">'+esc(e.status)+'</span><h3>'+esc(c?.title||'Course')+'</h3><p>'+esc(c?.short_description||c?.category||'Your learning journey')+'</p><div class="ae-course-progress" data-progress-course="'+esc(e.course_id)+'"><div class="ae-progress-header"><span>Course progress</span><strong>'+p.percentage+'%</strong></div><div class="progress-track" role="progressbar" aria-label="'+esc(c?.title||'Course')+' completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+p.percentage+'"><span style="width:'+p.percentage+'%"></span></div><div class="muted-note">'+p.completed+' of '+p.total+' lessons completed</div></div><div class="row-actions">'+(e.status==='active'&&(!e.expires_at||new Date(e.expires_at)>new Date())?'<button class="action" type="button" data-course="'+esc(e.course_id)+'">Continue learning →</button>':'<span class="muted-note">Access '+esc(e.status)+'</span>')+'</div></article>'}).join('')+'</div>'}
+function courseCards(items){return '<div class="cards">'+items.map(e=>{const c=state.courses.find(c=>c.id===e.course_id);const p=progressFor(e.course_id);return '<article class="course-card"><span class="tag">'+esc(e.status)+'</span><h3>'+esc(c?.title||'Course')+'</h3><p>'+esc(c?.short_description||c?.category||'Your learning journey')+'</p><div class="ae-course-progress" data-progress-course="'+esc(e.course_id)+'"><div class="ae-progress-header"><span>Course progress</span><strong>'+p.percentage+'%</strong></div><div class="progress-track" role="progressbar" aria-label="'+esc(c?.title||'Course')+' completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+p.percentage+'"><span style="width:'+p.percentage+'%"></span></div><div class="muted-note">'+p.completed+' of '+p.total+' lessons completed</div></div><div class="row-actions">'+(['active','completed'].includes(e.status)&&e.expires_at&&new Date(e.expires_at)>new Date()
+ ?'<button class="action" type="button" data-course="'+esc(e.course_id)+'">Continue learning →</button><span class="ae-access-date">Access ends '+esc(fmtDate(e.expires_at))+'</span>'
+ :e.expires_at&&new Date(e.expires_at)<=new Date()&&e.status!=='cancelled'
+ ?'<span class="ae-access-expired">Course access expired '+esc(fmtDate(e.expires_at))+'</span>'+
+ (state.extensionPrices[e.course_id]?.enabled&&Number(state.extensionPrices[e.course_id].amount)>0?
+ '<button class="action ae-extend-button" type="button" data-extend-course="'+esc(e.course_id)+'">Purchase 30-day extension · '+esc(money(state.extensionPrices[e.course_id].amount))+'</button>':
+ '<span class="muted-note">Contact support about renewing access.</span>')
+ :'<span class="muted-note">Access '+esc(e.status)+'</span>')+'</div></article>'}).join('')+'</div>'}
 function classroomPage(){
  const courseId=state.classroomId;
  const enrolled=state.enrollments.some(e=>e.course_id===courseId&&(e.status==='active'||e.status==='completed')&&(!e.expires_at||new Date(e.expires_at)>new Date()));
@@ -65,7 +77,7 @@ function classroomPage(){
 function ebookPage(){return heading('My eBooks','Download the digital books you purchased or claimed.')+
  '<section class="panel"><div class="ae-panel-title"><h2>Your eBook library</h2><span class="ae-count">'+state.ebookOrders.length+' titles</span></div>'+
  (state.ebookOrders.length?'<div class="ae-ebook-grid">'+state.ebookOrders.map(o=>'<article class="ae-ebook-tile"><div class="ae-book-art" aria-hidden="true">AE<span>eBOOK</span></div><div><span class="ae-book-eyebrow">DIGITAL LIBRARY</span><h3>'+esc(o.title)+'</h3><p>Purchased '+esc(fmtDate(o.date))+'</p><button class="action" type="button" data-ebook="'+esc(o.id)+'">Download eBook</button></div></article>').join('')+'</div>':empty('No eBooks yet','eBooks you purchase or claim will appear in your library.','<a class="action" href="https://andreerving.com/ebooks.html" target="_blank" rel="noopener noreferrer">Explore eBooks ↗</a>'))+'</section>'}
-function dashboard(){const active=state.enrollments.filter(e=>e.status==='active');const completed=state.courses.reduce((sum,course)=>sum+progressFor(course.id).completed,0);const name=state.profile?.full_name?.trim()?.split(' ')[0]||'there';return heading('My dashboard','Everything you need to keep learning and manage your account.')+
+function dashboard(){const active=state.enrollments.filter(e=>['active','completed'].includes(e.status)&&e.expires_at&&new Date(e.expires_at)>new Date());const completed=state.courses.reduce((sum,course)=>sum+progressFor(course.id).completed,0);const name=state.profile?.full_name?.trim()?.split(' ')[0]||'there';return heading('My dashboard','Everything you need to keep learning and manage your account.')+
 '<section class="hero"><div><span class="eyebrow">WELCOME BACK</span><h2>Good to see you, '+esc(name)+'.</h2><p>Pick up where you left off, explore your courses and stay connected.</p></div><div class="hero-stat"><strong>'+active.length+'</strong><span>Active courses</span></div></section>'+
 '<div class="metric-grid"><div class="metric"><span>My courses</span><strong>'+state.enrollments.length+'</strong><span>Enrolled</span></div><div class="metric"><span>Lessons completed</span><strong>'+completed+'</strong><span>Learning progress</span></div><div class="metric"><span>Orders</span><strong>'+state.orders.length+'</strong><span>Purchase records</span></div><div class="metric"><span>Support tickets</span><strong>'+state.tickets.filter(t=>!['closed','resolved'].includes(t.status)).length+'</strong><span>Open requests</span></div></div>'+
 '<h2 class="section-title">Continue learning</h2>'+(active.length?courseCards(active):'<section class="panel">'+empty('No courses assigned yet','Once you enroll in a course, it will appear here.','<div class="row-actions"><a class="action" href="https://andreerving.com/courses.html" target="_blank" rel="noopener noreferrer">Browse courses ↗</a></div>')+'</section>')+
@@ -92,7 +104,7 @@ function render(){if(!state.user)return;let page=state.page;document.body.classL
   };
   applySidebar(false);
   sidebarButton.addEventListener('click',()=>applySidebar(!document.body.classList.contains('ae-classroom-show-nav')));
- }else document.body.classList.remove('ae-classroom-show-nav');document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>go('classroom/'+b.dataset.course));document.querySelectorAll('[data-ticket]').forEach(b=>b.onclick=()=>{state.selectedTicket=b.dataset.ticket;render()});document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>download(b.dataset.download));document.querySelectorAll('[data-order-receipt]').forEach(b=>b.onclick=()=>downloadReceipt(b));document.querySelectorAll('[data-ebook]').forEach(b=>b.onclick=()=>downloadEbook(b.dataset.ebook));$('profile-form')?.addEventListener('submit',saveProfile);$('ticket-form')?.addEventListener('submit',createTicket);$('message-form')?.addEventListener('submit',sendMessage)}
+ }else document.body.classList.remove('ae-classroom-show-nav');document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>go('classroom/'+b.dataset.course));document.querySelectorAll('[data-extend-course]').forEach(b=>b.onclick=()=>purchaseExtension(b));document.querySelectorAll('[data-ticket]').forEach(b=>b.onclick=()=>{state.selectedTicket=b.dataset.ticket;render()});document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>download(b.dataset.download));document.querySelectorAll('[data-order-receipt]').forEach(b=>b.onclick=()=>downloadReceipt(b));document.querySelectorAll('[data-ebook]').forEach(b=>b.onclick=()=>downloadEbook(b.dataset.ebook));$('profile-form')?.addEventListener('submit',saveProfile);$('ticket-form')?.addEventListener('submit',createTicket);$('message-form')?.addEventListener('submit',sendMessage)}
 function go(page){if(!state.user)return;state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;if(location.hash!=='#/'+page)history.pushState(null,'','#/'+page);render();document.querySelector('.student-main')?.scrollTo(0,0)}
 async function downloadReceipt(button){
  const id=button.dataset.orderReceipt;
@@ -106,6 +118,26 @@ async function downloadReceipt(button){
   await downloadOrderReceipt(db,id,user);
  }catch(error){notify(error.message||'Unable to download this receipt.',true)}
  finally{button.disabled=false;button.innerHTML=label}
+}
+async function purchaseExtension(button){
+ if(button.disabled)return;
+ const courseId=button.dataset.extendCourse;
+ const enrollment=state.enrollments.find(x=>x.course_id===courseId),setting=state.extensionPrices[courseId];
+ if(!enrollment||!enrollment.expires_at||new Date(enrollment.expires_at)>new Date()||enrollment.status==='cancelled'||!setting?.enabled||Number(setting.amount)<=0){
+  return notify('This course is not currently eligible for an extension.',true);
+ }
+ button.disabled=true;const label=button.textContent;button.textContent='Preparing secure checkout…';
+ try{
+  const {data:{session},error}=await db.auth.getSession();
+  if(error||!session?.access_token)throw Error('Sign in again to purchase an extension.');
+  const response=await fetch('https://gnfyidajbectlppsekzj.supabase.co/functions/v1/andre-course-extension',{method:'POST',
+   headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({courseId})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.url)throw Error(data.error||'Extension checkout is unavailable.');
+  const dest=new URL(data.url);
+  if(dest.origin!=='https://andreerving.com'||dest.pathname!=='/checkout.html')throw Error('Invalid checkout destination');
+  window.location.assign(dest.href);
+ }catch(error){notify(error.message||'Unable to open extension checkout',true);button.disabled=false;button.textContent=label}
 }
 async function downloadEbook(id){
  const item=state.ebookOrders.find(x=>x.id===id);if(!item)return;
