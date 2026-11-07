@@ -77,7 +77,8 @@ let loadingLive=false;async function refreshLive(){
 function connectLive(){
  if(state.channel)db.removeChannel(state.channel);const userId=state.user?.id;if(!userId)return;
  state.channel=db.channel('customer-'+userId)
- .on('postgres_changes',{event:'*',schema:'public',table:'orders',filter:'user_id=eq.'+userId},refreshLive)
+ .on('postgres_changes',{event:'*',schema:'public',table:'orders'},refreshLive)
+ .on('postgres_changes',{event:'INSERT',schema:'public',table:'order_items'},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'course_enrollments',filter:'user_id=eq.'+userId},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'customer_documents',filter:'user_id=eq.'+userId},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'support_tickets',filter:'user_id=eq.'+userId},refreshLive)
@@ -91,6 +92,7 @@ $('signout').onclick=async()=>{await db.auth.signOut();history.replaceState(null
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=e=>{e.preventDefault();go(b.dataset.page)});
 window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'');if(state.user&&(page.startsWith('classroom/')||['dashboard','courses','orders','ebooks','documents','support','settings'].includes(page))){state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;render()}});
 window.addEventListener('focus',()=>{if(state.user)void refreshLive()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user)void refreshLive()});
 window.addEventListener('message',event=>{if(event.origin===location.origin&&event.data?.type==='ae-player-exit'&&state.user)go('courses')});
 db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||!session&&event==='TOKEN_REFRESHED')logoutToLogin()});
 boot().catch(e=>{logoutToLogin();$('login-status').textContent='Could not verify your session. Please sign in again.'});
