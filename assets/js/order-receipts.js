@@ -19,10 +19,10 @@ function wrap(value,limit=52){
 async function logoBytes(){
  try{
   const image=new Image();image.decoding='async';
-  image.src=new URL('images/logo.png',document.baseURI).href;
+  image.src=new URL('images/receipt-logo.svg?v=full-brand-20261107',document.baseURI).href;
   await image.decode();
   const canvas=document.createElement('canvas'),ratio=image.naturalWidth/image.naturalHeight;
-  canvas.width=700;canvas.height=Math.max(1,Math.round(700/ratio));
+  canvas.width=1300;canvas.height=Math.max(1,Math.round(1300/ratio));
   const context=canvas.getContext('2d');
   if(!context)return null;
   context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);
@@ -30,15 +30,15 @@ async function logoBytes(){
   const base64=canvas.toDataURL('image/jpeg',.94).split(',')[1],binary=atob(base64),bytes=new Uint8Array(binary.length);
   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
   return {bytes,width:canvas.width,height:canvas.height};
- }catch(error){console.warn('Receipt logo unavailable',error);return null}
+ }catch(error){console.error('Required receipt logo unavailable',error);throw new Error('The Andre Erving receipt logo could not load. Please retry your download.');}
 }
 function generatePages(order,items,logo){
  const pages=[],chunkSize=6;
  for(let offset=0;offset<items.length;offset+=chunkSize){
   const pageNumber=pages.length+1,last=offset+chunkSize>=items.length;
   let commands=box(0,0,PAGE_W,PAGE_H,'1 1 1');
-  if(logo){const width=246,height=Math.min(74,246*logo.height/logo.width);
-   commands+='q '+width+' 0 0 '+height+' 41 '+(708+(74-height)/2)+' cm /Brand Do Q\n';
+  if(logo){const width=332,height=Math.min(78,332*logo.height/logo.width);
+   commands+='q '+width+' 0 0 '+height+' 41 '+(697+(78-height)/2)+' cm /Brand Do Q\n';
   }else{
    commands+=box(43,715,43,43,'0.11 0.29 0.77')+txt('AE',51,729,20,true,'1 1 1');
    commands+=txt('ANDRE ERVING',98,736,18,true)+txt('GROWTH  |  STRATEGY  |  EDUCATION',98,720,8,true,'0.77 0.57 0.19');
