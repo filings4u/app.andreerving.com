@@ -154,3 +154,25 @@ body.ae-classroom-route.ae-classroom-show-nav .student-sidebar{display:flex!impo
  body.ae-classroom-route .ae-classroom-frame{height:calc(100dvh - 220px);min-height:420px}
  body.ae-classroom-route.ae-classroom-show-nav .student-sidebar{display:block!important}
 }
+
+/* Customer purchase history: accessible, responsive receipt downloads. */
+.ae-orders-panel{padding:25px 26px!important}
+.ae-orders-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
+.ae-orders-panel-header h2{margin:0;font-size:17px;color:#142e4d}
+.ae-order-count{display:inline-flex;align-items:center;border:1px solid #dce6f2;background:#f3f7fc;border-radius:99px;color:#607995;font-weight:800;font-size:11px;padding:7px 12px;white-space:nowrap}
+.ae-orders-list{width:100%}
+.ae-orders-list .ae-order-row{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:19px 5px;min-height:93px}
+.ae-orders-list .ae-order-row:last-child{border-bottom:0}
+.ae-order-details{min-width:0;flex:1}
+.ae-order-details strong{display:block;color:#173758;font-size:13px;letter-spacing:.01em;overflow-wrap:anywhere}
+.ae-order-details p{margin:7px 0 0;color:#8596aa;font-size:11px}
+.ae-order-actions{display:flex;align-items:center;justify-content:flex-end;gap:22px;flex-wrap:wrap}
+.ae-order-payment{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:75px}
+.ae-order-payment strong{color:#152f4b;font-size:13px}
+.ae-order-payment .tag{border-radius:99px;padding:4px 11px}
+.ae-orders-panel .ae-receipt-download{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:174px;min-height:39px;border:1px solid #c7d6e9;border-radius:8px;background:#fff;color:#1d4a80;font-size:11px;font-weight:800;padding:9px 13px;cursor:pointer;white-space:nowrap}
+.ae-orders-panel .ae-receipt-download:hover:not(:disabled){background:#edf4fd;border-color:#8dacd3;color:#163a68}
+.ae-orders-panel .ae-receipt-download:disabled{cursor:wait;opacity:.65}
+.ae-orders-panel .ae-receipt-download:focus-visible{outline:3px solid #d6a948;outline-offset:2px}
+@media(max-width:760px){.ae-orders-panel{padding:19px 16px!important}.ae-orders-list .ae-order-row{align-items:flex-start;flex-direction:column;gap:13px}.ae-order-actions{width:100%;justify-content:space-between;gap:10px}.ae-orders-panel .ae-receipt-download{min-width:0}}
+@media(max-width:390px){.ae-order-actions{align-items:stretch;flex-direction:column}.ae-order-payment{flex-direction:row;justify-content:space-between;align-items:center}.ae-orders-panel .ae-receipt-download{width:100%}}
