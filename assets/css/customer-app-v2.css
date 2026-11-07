@@ -81,3 +81,14 @@ body.student-app:not(.ae-authenticated) #student-view{display:none!important}
 .ae-classroom-head h1{margin:7px 0;font-size:clamp(23px,2.5vw,32px);letter-spacing:-.045em;color:#153454}
 .ae-classroom-frame{display:block;width:100%;height:calc(100dvh - 205px);min-height:560px;border:1px solid #dbe5ef;border-radius:12px;background:#f3f6fa;box-shadow:0 6px 25px #102b450e}
 @media(max-width:760px){.ae-classroom-head{align-items:flex-start;flex-direction:column}.ae-classroom-frame{height:85dvh;min-height:570px}}
+
+/* Final navigation spacing and customer-facing application details. */
+.student-brand-name{display:none!important}
+.student-brand .customer-sidebar-logo{max-width:170px;width:auto;max-height:54px}
+.student-sidebar #student-nav a:focus-visible,.student-content button:focus-visible,.student-content a:focus-visible{outline:3px solid #dcb55d;outline-offset:3px}
+.student-content button,.student-content a.action{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
+.student-content .panel:has(.ticket-button){min-height:240px}
+.student-content .form-field label,.student-content label.form-field{font-size:12px;color:#273f5d;font-weight:800}
+.student-content .form-field input:focus-visible,.student-content .form-field textarea:focus-visible,.student-content .form-field select:focus-visible{outline:3px solid #e1c17c;outline-offset:2px;border-color:#bc8e3c}
+.student-content .ae-ebook-tile .action{display:inline-flex;align-items:center;justify-content:center}
+@media(max-width:760px){.student-brand .customer-sidebar-logo{max-width:155px}.student-content .ticket-grid{grid-template-columns:1fr}}
