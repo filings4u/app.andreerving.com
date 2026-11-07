@@ -33,7 +33,7 @@ async function logoBytes(){
  }catch(error){console.warn('Receipt logo unavailable',error);return null}
 }
 function generatePages(order,items,logo){
- const pages=[],chunkSize=8;
+ const pages=[],chunkSize=6;
  for(let offset=0;offset<items.length;offset+=chunkSize){
   const pageNumber=pages.length+1,last=offset+chunkSize>=items.length;
   let commands=box(0,0,PAGE_W,PAGE_H,'1 1 1');
