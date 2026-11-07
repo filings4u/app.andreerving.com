@@ -188,3 +188,32 @@ body.ae-classroom-route .ae-classroom-frame{flex:1 1 auto;height:auto!important;
  body.ae-classroom-route .student-content{height:100dvh;overflow:hidden;padding-top:10px;padding-bottom:10px}
  body.ae-classroom-route .ae-classroom-frame{min-height:0!important;height:auto!important}
 }
+
+/* Consistent sign-in typography and password visibility control. */
+#login-view{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+#login-view .auth-intro{padding:clamp(38px,6vw,96px)}
+#login-view .auth-intro h1{font-family:inherit;font-size:clamp(44px,4.8vw,72px);line-height:1.09;letter-spacing:-.055em;font-weight:850;margin:34px 0 26px}
+#login-view .auth-intro h1 em{font-family:inherit;font-weight:850}
+#login-view .auth-intro p:not(.eyebrow){font-family:inherit;font-size:16px;line-height:1.75;max-width:520px;color:#d1dfed}
+#login-view .auth-intro .eyebrow{font-size:11px;letter-spacing:.13em;font-weight:850;color:#e6b75a}
+#login-view .auth-intro small{font-size:12px;letter-spacing:0;color:#d1dfed;line-height:1.6}
+#login-view .auth-form-wrap{padding:clamp(22px,4vw,64px)}
+#login-view .auth-card{width:min(100%,480px);padding:clamp(28px,3.5vw,48px);border-radius:20px}
+#login-view .auth-card h2{font-family:inherit;font-size:clamp(25px,2.6vw,33px);font-weight:850;letter-spacing:-.045em;line-height:1.2;margin:24px 0 15px;color:#132b47}
+#login-view .auth-card>p:not(#login-status){color:#657a94;font-size:14px;line-height:1.75;margin:0 0 22px}
+#login-view .auth-card .eyebrow{font-size:11px;color:#b5842d;letter-spacing:.13em;font-weight:850}
+#login-view #login{display:flex;flex-direction:column;gap:0}
+#login-view #login label{display:block;font-family:inherit;font-size:12px;font-weight:800;color:#162f4d;margin:0 0 8px}
+#login-view #login input{height:47px;min-height:47px;width:100%;margin:0 0 20px;border-radius:9px;border:1px solid #d1deeb;background:#fff;color:#142d4b;font-family:inherit;font-size:14px;padding:11px 13px}
+#login-view #login input:focus-visible{outline:3px solid #ead096;outline-offset:1px;border-color:#b98f3b}
+#login-view #login .ae-password-control{position:relative;width:100%}
+#login-view #login .ae-password-control input{padding-right:78px}
+#login-view #login .ae-password-toggle{position:absolute;right:7px;top:7px;min-width:62px;height:33px;border:1px solid #e1e8f1;border-radius:7px;background:#f4f7fb;color:#235080;font-family:inherit;font-size:12px;font-weight:800;padding:6px 10px;cursor:pointer}
+#login-view #login .ae-password-toggle:hover{background:#e9f1fa}
+#login-view #login .ae-password-toggle:focus-visible{outline:3px solid #d7aa51;outline-offset:2px}
+#login-view #login button.primary{font-family:inherit;font-size:13px;min-height:46px;margin:9px 0 13px;border-radius:9px;font-weight:800;background:#2052a0;color:#fff}
+#login-view .ae-login-links{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:8px}
+#login-view .ae-login-links a{color:#2054a1;font-family:inherit;font-size:12px;font-weight:700;text-decoration:none}
+#login-view .ae-login-links a:hover{text-decoration:underline}
+#login-view #login-status{font-family:inherit;font-size:12px;line-height:1.6}
+@media(max-width:760px){#login-view .auth-intro{padding:35px 24px}#login-view .auth-intro h1{font-size:42px;margin:28px 0 18px}#login-view .auth-form-wrap{padding:24px 16px}#login-view .auth-card{padding:28px 23px}}
