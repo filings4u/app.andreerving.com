@@ -72,7 +72,7 @@ async function loadEbooks(){
 }
 let loadingLive=false;async function refreshLive(){
  if(loadingLive||!state.user||document.querySelector('#student-content form:focus-within'))return;
- loadingLive=true;try{await load();await loadEbooks();if(state.user)render()}finally{loadingLive=false}
+ loadingLive=true;try{await load();await loadEbooks();if(state.user&&state.page!=='classroom')render();else if(state.user&&state.page==='classroom'){const ok=state.enrollments.some(e=>e.course_id===state.classroomId&&['active','completed'].includes(e.status)&&(!e.expires_at||new Date(e.expires_at)>new Date()));if(!ok)render()}}finally{loadingLive=false}
 }
 function connectLive(){
  if(state.channel)db.removeChannel(state.channel);const userId=state.user?.id;if(!userId)return;
@@ -82,6 +82,7 @@ function connectLive(){
  .on('postgres_changes',{event:'*',schema:'public',table:'customer_documents',filter:'user_id=eq.'+userId},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'support_tickets',filter:'user_id=eq.'+userId},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'lesson_progress',filter:'user_id=eq.'+userId},refreshLive)
+ .on('postgres_changes',{event:'INSERT',schema:'public',table:'support_messages'},event=>{if(state.page==='support'&&state.selectedTicket===event.new?.ticket_id)void loadMessages()})
  .subscribe();
 }
 async function boot(){const {data:{user},error}=await db.auth.getUser();if(error||!user){logoutToLogin();return}state.user=user;document.body.classList.remove('ae-authenticated');$('login-view').hidden=true;$('student-view').hidden=true;$('sidebar-email').textContent=user.email;$('top-email').textContent=user.email;$('student-content').innerHTML='<div class="panel">Loading your account…</div>';await load();await loadEbooks();if(state.user?.id!==user.id)return;const route=location.hash.replace(/^#\/?/,'');state.classroomId=route.startsWith('classroom/')?route.slice(10):null;state.page=state.classroomId?'classroom':['dashboard','courses','orders','ebooks','documents','support','settings'].includes(route)?route:'dashboard';render();$('student-view').inert=false;$('student-view').hidden=false;document.body.classList.add('ae-authenticated');connectLive()}
@@ -90,5 +91,6 @@ $('signout').onclick=async()=>{await db.auth.signOut();history.replaceState(null
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=e=>{e.preventDefault();go(b.dataset.page)});
 window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'');if(state.user&&(page.startsWith('classroom/')||['dashboard','courses','orders','ebooks','documents','support','settings'].includes(page))){state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;render()}});
 window.addEventListener('focus',()=>{if(state.user)void refreshLive()});
+window.addEventListener('message',event=>{if(event.origin===location.origin&&event.data?.type==='ae-player-exit'&&state.user)go('courses')});
 db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||!session&&event==='TOKEN_REFRESHED')logoutToLogin()});
 boot().catch(e=>{logoutToLogin();$('login-status').textContent='Could not verify your session. Please sign in again.'});
