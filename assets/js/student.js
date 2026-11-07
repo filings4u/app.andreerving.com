@@ -63,12 +63,14 @@ async function sendMessage(e){e.preventDefault();const message=String(new FormDa
 function logoutToLogin(){state.user=null;state.loaded=false;state.orders=[];state.enrollments=[];state.courses=[];state.documents=[];state.ebookOrders=[];state.progress=[];state.tickets=[];state.selectedTicket=null;if(state.channel){db.removeChannel(state.channel);state.channel=null}document.body.classList.remove('ae-authenticated');$('student-view').inert=true;$('student-view').hidden=true;$('auth-check').hidden=true;$('login-view').hidden=false;$('student-content').replaceChildren()}
 async function loadEbooks(){
  const current=state.user;if(!current)return;
- const {data:{session}}=await db.auth.getSession();if(!session?.access_token)return;
- const res=await fetch('https://gnfyidajbectlppsekzj.supabase.co/functions/v1/customer-ebook-library',{method:'POST',
- headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({action:'list'})});
- if(!res.ok){notify('Unable to load your eBook library.',true);return}
- const json=await res.json();if(state.user?.id!==current.id)return;
- state.ebookOrders=Array.isArray(json.items)?json.items:[];
+ try{
+  const {data:{session}}=await db.auth.getSession();if(!session?.access_token)return;
+  const res=await fetch('https://gnfyidajbectlppsekzj.supabase.co/functions/v1/customer-ebook-library',{method:'POST',
+  headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({action:'list'})});
+  if(!res.ok)throw Error('eBook library temporarily unavailable');
+  const json=await res.json();if(state.user?.id!==current.id)return;
+  state.ebookOrders=Array.isArray(json.items)?json.items:[];
+ }catch(error){console.warn('eBook library loading issue',error);if(state.page==='ebooks')notify('Your eBooks could not load. Try this page again.',true)}
 }
 let loadingLive=false;async function refreshLive(){
  if(loadingLive||!state.user||document.querySelector('#student-content form:focus-within'))return;
