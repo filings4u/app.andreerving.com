@@ -44,7 +44,7 @@ function go(page){if(!state.user)return;state.page=page;if(location.hash!=='#/'+
 async function downloadEbook(id){
  const item=state.ebookOrders.find(x=>x.id===id);if(!item)return;
  const {data:{session}}=await db.auth.getSession();if(!session?.access_token)return logoutToLogin();
- try{const response=await fetch('https://gnfyidajbectlppsekzj.supabase.co/functions/v1/customer-ebook-download',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({orderId:item.orderId,offeringId:id})});
+ try{const response=await fetch('https://gnfyidajbectlppsekzj.supabase.co/functions/v1/customer-ebook-library',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({action:'download',offeringId:id})});
  const data=await response.json().catch(()=>({}));if(!response.ok||!data.url)throw Error(data.error||'Download unavailable');window.open(data.url,'_blank','noopener,noreferrer')
  }catch(e){notify(e.message||'Unable to download eBook',true)}
 }
@@ -54,12 +54,29 @@ async function createTicket(e){e.preventDefault();const f=new FormData(e.target)
 async function loadMessages(){const ticketId=state.selectedTicket;const el=$('ticket-messages');if(!el)return;const {data,error}=await db.from('support_messages').select('id,sender_id,message,created_at').eq('ticket_id',ticketId).order('created_at');if(state.selectedTicket!==ticketId)return;if(error){el.textContent='Unable to load messages.';return}el.innerHTML=(data||[]).map(m=>'<div class="message '+(m.sender_id===state.user.id?'mine':'')+'"><div>'+esc(m.message).replace(/\n/g,'<br>')+'</div><small>'+(m.sender_id===state.user.id?'You':'Support')+' · '+esc(fmtDate(m.created_at))+'</small></div>').join('')||'<p class="muted">No messages yet.</p>';el.scrollTop=el.scrollHeight}
 async function sendMessage(e){e.preventDefault();const message=String(new FormData(e.target).get('message')||'').trim();if(!message)return;const {error}=await db.from('support_messages').insert({ticket_id:state.selectedTicket,sender_id:state.user.id,message});if(error)return notify('Unable to send reply: '+error.message,true);e.target.reset();await loadMessages();notify('Reply sent.')}
 function logoutToLogin(){state.user=null;state.loaded=false;state.orders=[];state.enrollments=[];state.courses=[];state.documents=[];state.ebookOrders=[];state.progress=[];state.tickets=[];state.selectedTicket=null;if(state.channel){db.removeChannel(state.channel);state.channel=null}document.body.classList.remove('ae-authenticated');$('student-view').hidden=true;$('login-view').hidden=false;$('student-content').replaceChildren()}
-async function loadEbooks(){if(!state.user)return;const ids=state.orders.filter(o=>o.status==='paid'||o.status==='completed').map(o=>o.id);if(!ids.length){state.ebookOrders=[];return}
- const {data,error}=await db.from('order_items').select('order_id,item_name,item_type').in('order_id',ids);if(error){state.ebookOrders=[];return}
- const byId=new Map(state.orders.map(o=>[o.id,o]));state.ebookOrders=(data||[]).filter(x=>x.item_type==='product'&&/ebook|steps to goal|motivated|haul rates|home office|freight broker|leadership|feedback|time management/i.test(x.item_name)).map(x=>({id:x.item_name,orderId:x.order_id,title:x.item_name,date:byId.get(x.order_id)?.created_at}));
+async function loadEbooks(){
+ const current=state.user;if(!current)return;
+ const {data:{session}}=await db.auth.getSession();if(!session?.access_token)return;
+ const res=await fetch('https://gnfyidajbectlppsekzj.supabase.co/functions/v1/customer-ebook-library',{method:'POST',
+ headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({action:'list'})});
+ if(!res.ok){notify('Unable to load your eBook library.',true);return}
+ const json=await res.json();if(state.user?.id!==current.id)return;
+ state.ebookOrders=Array.isArray(json.items)?json.items:[];
 }
-let loadingLive=false;async function refreshLive(){if(loadingLive||!state.user)return;loadingLive=true;try{await load();await loadEbooks();render()}finally{loadingLive=false}}
-function connectLive(){if(state.channel)db.removeChannel(state.channel);const userId=state.user?.id;if(!userId)return;state.channel=db.channel('customer-'+userId).on('postgres_changes',{event:'*',schema:'public',table:'orders',filter:'user_id=eq.'+userId},refreshLive).on('postgres_changes',{event:'*',schema:'public',table:'course_enrollments',filter:'user_id=eq.'+userId},refreshLive).on('postgres_changes',{event:'*',schema:'public',table:'customer_documents',filter:'user_id=eq.'+userId},refreshLive).on('postgres_changes',{event:'*',schema:'public',table:'support_tickets',filter:'user_id=eq.'+userId},refreshLive).on('postgres_changes',{event:'*',schema:'public',table:'lesson_progress',filter:'user_id=eq.'+userId},refreshLive).subscribe();}
+let loadingLive=false;async function refreshLive(){
+ if(loadingLive||!state.user||document.querySelector('#student-content form:focus-within'))return;
+ loadingLive=true;try{await load();await loadEbooks();if(state.user)render()}finally{loadingLive=false}
+}
+function connectLive(){
+ if(state.channel)db.removeChannel(state.channel);const userId=state.user?.id;if(!userId)return;
+ state.channel=db.channel('customer-'+userId)
+ .on('postgres_changes',{event:'*',schema:'public',table:'orders',filter:'user_id=eq.'+userId},refreshLive)
+ .on('postgres_changes',{event:'*',schema:'public',table:'course_enrollments',filter:'user_id=eq.'+userId},refreshLive)
+ .on('postgres_changes',{event:'*',schema:'public',table:'customer_documents',filter:'user_id=eq.'+userId},refreshLive)
+ .on('postgres_changes',{event:'*',schema:'public',table:'support_tickets',filter:'user_id=eq.'+userId},refreshLive)
+ .on('postgres_changes',{event:'*',schema:'public',table:'lesson_progress',filter:'user_id=eq.'+userId},refreshLive)
+ .subscribe();
+}
 async function boot(){const {data:{user},error}=await db.auth.getUser();if(error||!user){logoutToLogin();return}state.user=user;document.body.classList.remove('ae-authenticated');$('login-view').hidden=true;$('student-view').hidden=true;$('sidebar-email').textContent=user.email;$('top-email').textContent=user.email;$('student-content').innerHTML='<div class="panel">Loading your account…</div>';await load();await loadEbooks();if(state.user?.id!==user.id)return;const route=location.hash.replace(/^#\/?/,'');state.page=['dashboard','courses','orders','ebooks','documents','support','settings'].includes(route)?route:'dashboard';render();$('student-view').hidden=false;document.body.classList.add('ae-authenticated');connectLive()}
 $('login').addEventListener('submit',async e=>{e.preventDefault();const submit=e.target.querySelector('button');submit.disabled=true;const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});submit.disabled=false;if(error){$('login-status').textContent='Sign in failed: '+error.message;return}await boot()});
 $('signout').onclick=async()=>{await db.auth.signOut();history.replaceState(null,'',location.pathname);logoutToLogin()};
