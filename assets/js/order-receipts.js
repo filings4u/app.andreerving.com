@@ -18,8 +18,8 @@ function wrap(value,limit=52){
 }
 async function logoBytes(){
  try{
-  const image=new Image();image.decoding='async';
-  image.src=new URL('images/receipt-logo.svg?v=full-brand-20261107',document.baseURI).href;
+  const image=new Image();image.decoding='async';image.crossOrigin='anonymous';
+  image.src='https://gnfyidajbectlppsekzj.supabase.co/storage/v1/object/public/Andre%20Erving%20Public/logos/logo.png';
   await image.decode();
   const canvas=document.createElement('canvas'),ratio=image.naturalWidth/image.naturalHeight;
   canvas.width=1300;canvas.height=Math.max(1,Math.round(1300/ratio));
