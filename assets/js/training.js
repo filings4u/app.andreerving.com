@@ -7,7 +7,7 @@ const uid=v=>/^[0-9a-f-]{36}$/i.test(v||'');
 const type=t=>({text:'Article',video:'Video',download:'Download',quiz:'Quiz'}[t]||'Lesson');
 let user=null,modules=[],lessons=[],progress=[],position=0,working=false,activeVideoPlayer=null;
 const done=id=>!!progress.find(p=>p.lesson_id===id&&p.completed);
-function message(text){$('player-status').hidden=false;$('player-status').textContent=text}
+function message(text){const gate=$('classroom-access-message');if(gate&&!document.body.classList.contains('ae-classroom-authorized'))gate.textContent=text;$('player-status').hidden=false;$('player-status').textContent=text}
 function safeHTML(input){
  const doc=new DOMParser().parseFromString(String(input||''),'text/html'),allow=new Set(['P','BR','STRONG','B','EM','I','U','H2','H3','H4','UL','OL','LI','BLOCKQUOTE','A']);
  const clean=node=>{for(const child of [...node.childNodes]){if(child.nodeType===3)continue;if(child.nodeType!==1){child.remove();continue}
@@ -253,8 +253,9 @@ async function complete(){
 }
 async function init(){
  const auth=await db.auth.getUser();user=auth.data.user;
+ if(auth.error){message('Your session cannot be verified. Sign in through the customer portal.');return}
  if(!user){message('Sign in through your customer portal to view this course.');return}
- if(!uid(courseId)){message('Choose a course from My Courses to start learning.');return}
+ if(!uid(courseId)){message('Choose an enrolled course from My Courses to start learning.');return}
  if(adminPreview){
    const {data:staff,error}=await db.from('admin_profiles').select('active,role').eq('id',user.id).maybeSingle();
    if(error||!staff?.active||!['admin','manager','editor'].includes(staff.role)){
@@ -265,6 +266,8 @@ async function init(){
    if(enrollErr||!enroll){message('This course is not assigned to your account.');return}
    if(enroll.expires_at&&new Date(enroll.expires_at)<new Date()){message('Your course access has expired.');return}
  }
+ document.body.classList.add('ae-classroom-authorized');
+ const gate=$('classroom-access-gate');if(gate)gate.hidden=true;
  const res=await Promise.all([
  db.from('courses').select('title').eq('id',courseId).single(),
  db.from('course_modules').select('id,title,description,sort_order').eq('course_id',courseId).order('sort_order'),
@@ -279,7 +282,23 @@ async function init(){
  const desired=params.get('lesson'),start=Math.max(0,lessons.findIndex(l=>l.id===desired));await showLesson(start);
 }
 const classroomTimeout=setTimeout(()=>{if($('lesson-view')?.hidden){message('The classroom is taking too long to load. Check your connection, sign in again, or reopen your course from My Courses.')}},14000);
-init().then(()=>clearTimeout(classroomTimeout)).catch(e=>{clearTimeout(classroomTimeout);message('Unable to load the course player: '+(e?.message||'Please refresh or sign in again.'))});
+const embedded=params.get('embedded')==='1';
+if(embedded){
+ document.querySelectorAll('a[href="./#/courses"]').forEach(link=>link.addEventListener('click',event=>{
+  if(window.parent===window)return;
+  event.preventDefault();window.parent.postMessage({type:'ae-player-exit'},location.origin);
+ }));
+}
+db.auth.onAuthStateChange((event,session)=>{
+ if(event==='SIGNED_OUT'||event==='USER_DELETED'||(event==='TOKEN_REFRESHED'&&!session)){
+  document.body.classList.remove('ae-classroom-authorized');
+  const gate=$('classroom-access-gate');if(gate)gate.hidden=false;
+  message('Your session ended. Sign in to continue learning.');
+  if(activeVideoPlayer){activeVideoPlayer.destroy();activeVideoPlayer=null}
+  clearPlayerMedia();$('lesson-view').hidden=true;
+ }
+});
+init().then(()=>clearTimeout(classroomTimeout)).catch(e=>{clearTimeout(classroomTimeout);message('Unable to load the course player: '+(e?.message||'Please sign in again.'))});
 
 
 /**
