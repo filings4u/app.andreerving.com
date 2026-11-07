@@ -225,3 +225,12 @@ body.ae-classroom-route .ae-classroom-frame{flex:1 1 auto;height:auto!important;
 #profile-form .form-actions{margin-top:21px}
 @media(max-width:1150px){#profile-form .ae-profile-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){#profile-form .ae-profile-fields{grid-template-columns:minmax(0,1fr);gap:15px}}
+
+/* Expired course purchase and renewal states. */
+.course-card .row-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.course-card .ae-access-date{font-size:11px;font-weight:650;color:#6e829b}
+.course-card .ae-access-expired{width:100%;color:#924236;font-size:12px;font-weight:800}
+.course-card .ae-extend-button{background:#c99a36!important;border-color:#c99a36!important;color:#0f223d!important;font-weight:850!important;-webkit-text-fill-color:#0f223d!important;min-height:42px}
+.course-card .ae-extend-button:hover{background:#b8892d!important;border-color:#b8892d!important}
+.course-card .ae-extend-button:disabled{opacity:.7;cursor:wait}
+.course-card .ae-extend-button:focus-visible{outline:3px solid #d7b56e;outline-offset:2px}
