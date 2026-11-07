@@ -155,6 +155,17 @@ function connectLive(){
  .subscribe();
 }
 async function boot(){const {data:{user},error}=await db.auth.getUser();if(error||!user){logoutToLogin();return}state.user=user;document.body.classList.remove('ae-authenticated');$('login-view').hidden=true;$('student-view').hidden=true;$('sidebar-email').textContent=user.email;$('top-email').textContent=user.email;$('student-content').innerHTML='<div class="panel">Loading your account…</div>';await load();await loadEbooks();if(state.user?.id!==user.id)return;const route=location.hash.replace(/^#\/?/,'');state.classroomId=route.startsWith('classroom/')?route.slice(10):null;state.page=state.classroomId?'classroom':['dashboard','courses','orders','ebooks','documents','support','settings'].includes(route)?route:'dashboard';render();$('student-view').inert=false;$('student-view').hidden=false;$('auth-check').hidden=true;document.body.classList.add('ae-authenticated');connectLive()}
+const passwordToggle=$('toggle-password');
+if(passwordToggle){
+ passwordToggle.addEventListener('click',()=>{
+  const input=$('password');
+  const showing=input.type==='password';
+  input.type=showing?'text':'password';
+  passwordToggle.textContent=showing?'Hide':'Show';
+  passwordToggle.setAttribute('aria-label',showing?'Hide password':'Show password');
+  passwordToggle.setAttribute('aria-pressed',String(showing));
+ });
+}
 $('login').addEventListener('submit',async e=>{e.preventDefault();const submit=e.target.querySelector('button');submit.disabled=true;const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});submit.disabled=false;if(error){$('login-status').textContent='Sign in failed: '+error.message;return}await boot()});
 $('signout').onclick=async()=>{await db.auth.signOut();history.replaceState(null,'',location.pathname);logoutToLogin()};
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=e=>{e.preventDefault();go(b.dataset.page)});
