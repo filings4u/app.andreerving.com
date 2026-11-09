@@ -83,6 +83,55 @@ function dashboard(){const active=state.enrollments.filter(e=>['active','complet
 '<h2 class="section-title">Continue learning</h2>'+(active.length?courseCards(active):'<section class="panel">'+empty('No courses assigned yet','Once you enroll in a course, it will appear here.','<div class="row-actions"><a class="action" href="https://andreerving.com/courses.html" target="_blank" rel="noopener noreferrer">Browse courses ↗</a></div>')+'</section>')+
 '<section class="panel"><h2>Quick access</h2><div class="row-actions">'+button('View all courses','courses')+button('Orders & receipts','orders')+button('My eBooks','ebooks')+button('My documents','documents')+button('Contact support','support')+'</div></section>'}
 function coursesPage(){return heading('My courses','Access your programs and track learning progress.')+(state.enrollments.length?courseCards(state.enrollments):'<section class="panel">'+empty('You are not enrolled yet','Your courses will appear here after enrollment.','<div class="row-actions"><a class="action" target="_blank" rel="noopener noreferrer" href="https://andreerving.com/courses.html">Explore courses ↗</a></div>')+'</section>')}
+
+function liveTrainingPage(){
+ return heading('Live Training Sessions','Register for instructor-led sessions, review your training schedule, and join Microsoft Teams.')+
+ '<section class="panel ae-live-training-panel"><div class="ae-live-training-header"><div><span class="eyebrow">FREIGHT BROKER TRAINING / LIVE LEARNING</span><h2>Upcoming live sessions</h2><p class="muted">Select an available session to reserve your seat. Your meeting link opens 30 minutes before class.</p></div><button class="action secondary" id="ae-live-refresh" type="button">Refresh sessions</button></div><div id="ae-live-training-sessions"><p class="muted">Loading live training sessions…</p></div></section>'+
+ '<section class="panel ae-live-training-help"><h2>How live training works</h2><p>Choose a session, register to reserve a seat, then use <strong>Join Microsoft Teams</strong> when the class opens. Dates display in your local time. Active enrollment in the associated course is required.</p></section>';
+}
+async function liveTrainingApi(action,body={}){
+ const {data,error}=await db.functions.invoke('andre-live-training',{body:{action,...body}});
+ if(error){let detail=null;try{detail=await error.context?.json()}catch{}throw new Error(detail?.error||error.message)}
+ if(data?.error)throw new Error(data.error);
+ return data;
+}
+async function mountLiveTraining(){
+ const holder=$('ae-live-training-sessions');
+ if(!holder||state.page!=='live-training')return;
+ const refresh=$('ae-live-refresh');
+ if(refresh)refresh.disabled=true;
+ try{
+  const result=await liveTrainingApi('student_list');
+  if(state.page!=='live-training'||!holder.isConnected)return;
+  const sessions=result.sessions||[];
+  const fmt=(value,options)=>new Date(value).toLocaleString(undefined,options);
+  holder.innerHTML=sessions.length?'<div class="ae-live-session-grid">'+sessions.map(session=>{
+   const start=new Date(session.start_at).getTime(),end=new Date(session.end_at).getTime(),now=Date.now();
+   const joinOpen=session.registered&&now>=start-30*60000&&now<=end+60*60000;
+   const space=Math.max(0,session.capacity-session.registered_count);
+   return '<article class="ae-live-session"><span class="ae-live-course-name">'+esc(session.course_title||'Freight Broker Training')+'</span><h3>'+esc(session.title)+'</h3><p>'+esc(session.description||'Instructor-led training and practical exercises.')+'</p>'+
+    '<div class="ae-live-session-details"><span><strong>When:</strong> '+esc(fmt(session.start_at,{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}))+' – '+esc(fmt(session.end_at,{hour:'numeric',minute:'2-digit'}))+'</span><span><strong>Training timezone:</strong> '+esc(session.timezone||'America/Chicago')+'</span><span><strong>Instructor:</strong> '+esc(session.host_name||'Andre Erving Training')+'</span><span><strong>Seats remaining:</strong> '+space+' of '+session.capacity+'</span></div>'+
+    (session.registered?'<p class="ae-live-registered">✓ You are registered</p>':'')+
+    '<div class="row-actions ae-live-session-actions">'+(session.registered?
+       '<button type="button" class="action" data-live-join="'+esc(session.id)+'" '+(joinOpen?'':'disabled')+'>Join Microsoft Teams</button><button type="button" class="action secondary" data-live-cancel="'+esc(session.id)+'">Cancel registration</button>':
+       '<button type="button" class="action" data-live-register="'+esc(session.id)+'" '+(space===0||now>=start?'disabled':'')+'>Register for session</button>')+'</div>'+
+    (session.registered&&!joinOpen?'<p class="muted">Join opens 30 minutes before the session starts.</p>':'')+'</article>';
+  }).join('')+'</div>':'<div class="empty"><strong>No live sessions available yet</strong><p>Sessions will appear when a class is scheduled for a course you are enrolled in.</p></div>';
+  const change=async(button,action,id)=>{
+   button.disabled=true;
+   try{await liveTrainingApi(action,{session_id:id});notify(action==='register'?'Your seat is reserved.':'Your registration has been cancelled.');await mountLiveTraining()}
+   catch(error){notify(error.message,true);button.disabled=false}
+  };
+  holder.querySelectorAll('[data-live-register]').forEach(button=>button.onclick=()=>change(button,'register',button.dataset.liveRegister));
+  holder.querySelectorAll('[data-live-cancel]').forEach(button=>button.onclick=()=>change(button,'unregister',button.dataset.liveCancel));
+  holder.querySelectorAll('[data-live-join]').forEach(button=>button.onclick=async()=>{
+   button.disabled=true;
+   try{const result=await liveTrainingApi('join',{session_id:button.dataset.liveJoin});window.open(result.url,'_blank','noopener,noreferrer');notify('Opening your Teams session.')}
+   catch(error){notify(error.message,true);button.disabled=false}
+  });
+ }catch(error){if(holder.isConnected)holder.innerHTML='<div class="empty"><strong>Unable to load live sessions</strong><p>'+esc(error.message)+'</p><button type="button" class="action secondary" id="ae-live-retry">Try again</button></div>';holder.querySelector('#ae-live-retry')?.addEventListener('click',mountLiveTraining)}
+ finally{if(refresh?.isConnected)refresh.disabled=false}
+}
 function ordersPage(){return heading('Orders & purchases','View your purchases and download your Andre Erving PDF receipts.')+
  '<section class="panel ae-orders-panel"><div class="ae-orders-panel-header"><h2>Purchase history</h2><span class="ae-order-count">'+state.orders.length+' orders</span></div>'+
  (state.orders.length?'<div class="data-list ae-orders-list">'+state.orders.map(o=>'<div class="data-row ae-order-row"><div class="ae-order-details"><strong>'+esc(o.order_number)+'</strong><p>Placed '+esc(fmtDate(o.created_at))+'</p></div><div class="ae-order-actions"><div class="ae-order-payment"><strong>'+esc(money(o.total,o.currency))+'</strong><span class="tag">'+esc(o.status)+'</span></div>'+
@@ -94,7 +143,7 @@ function supportPage(){const selected=state.tickets.find(t=>t.id===state.selecte
 '<div class="ticket-grid"><section class="panel"><h2>Start a support request</h2><form id="ticket-form"><label class="form-field">Subject<input name="subject" minlength="3" maxlength="180" required placeholder="How can we help?"></label><label class="form-field">Category<select name="category"><option value="general">General question</option><option value="course">Courses & learning</option><option value="billing">Orders & billing</option><option value="technical">Technical help</option><option value="documents">Documents</option></select></label><label class="form-field">Message<textarea name="message" minlength="1" maxlength="10000" required placeholder="Describe what you need help with"></textarea></label><button class="primary" type="submit">Submit ticket</button></form></section>'+
 '<section class="panel"><h2>My support tickets</h2>'+(state.tickets.length?state.tickets.map(t=>'<button class="ticket-button '+(selected?.id===t.id?'active':'')+'" data-ticket="'+esc(t.id)+'"><strong>'+esc(t.subject)+'</strong><p class="muted">'+esc(fmtDate(t.created_at))+' · '+esc(t.status.replace('_',' '))+'</p></button>').join(''):empty('No support tickets yet','Submit a request to start a conversation.'))+'</section></div>'+
 (selected?'<section class="panel"><h2>'+esc(selected.subject)+' <span class="tag '+esc(selected.status)+'">'+esc(selected.status.replace('_',' '))+'</span></h2><div id="ticket-messages" class="message-list">Loading messages…</div>'+(selected.status==='closed'?'<p class="muted">This ticket is closed.</p>':'<form id="message-form" class="form-actions"><label class="form-field">Reply<textarea name="message" required maxlength="10000" placeholder="Write a reply…"></textarea></label><button class="primary" type="submit">Send reply</button></form>')+'</section>':'')}
-function render(){if(!state.user)return;let page=state.page;document.body.classList.toggle('ae-dashboard-view',page==='dashboard');document.body.classList.toggle('ae-classroom-route',page==='classroom');const titles={classroom:'Course player',dashboard:'Dashboard',courses:'My courses',orders:'Orders & purchases',ebooks:'My eBooks',documents:'My documents',support:'Support center',settings:'Account settings'};if(!titles[page])page='dashboard';state.page=page;$('top-heading').textContent=titles[page];document.querySelectorAll('[data-page]').forEach(b=>{b.classList.toggle('active',b.dataset.page===page);b.setAttribute('aria-current',b.dataset.page===page?'page':'false')});$('student-content').innerHTML=({dashboard,courses:coursesPage,orders:ordersPage,ebooks:ebookPage,documents:documentsPage,support:supportPage,settings,classroom:classroomPage})[page]();if(page==='support'&&state.selectedTicket){loadMessages();connectTicketMessages()}else if(state.messageChannel){db.removeChannel(state.messageChannel);state.messageChannel=null}document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>go(b.dataset.route));
+function render(){if(!state.user)return;let page=state.page;document.body.classList.toggle('ae-dashboard-view',page==='dashboard');document.body.classList.toggle('ae-classroom-route',page==='classroom');const titles={classroom:'Course player',dashboard:'Dashboard',courses:'My courses',orders:'Orders & purchases',ebooks:'My eBooks',documents:'My documents',support:'Support center',settings:'Account settings','live-training':'Live Training Sessions'};if(!titles[page])page='dashboard';state.page=page;$('top-heading').textContent=titles[page];document.querySelectorAll('[data-page]').forEach(b=>{b.classList.toggle('active',b.dataset.page===page);b.setAttribute('aria-current',b.dataset.page===page?'page':'false')});$('student-content').innerHTML=({dashboard,courses:coursesPage,orders:ordersPage,ebooks:ebookPage,documents:documentsPage,support:supportPage,settings,classroom:classroomPage,'live-training':liveTrainingPage})[page]();if(page==='support'&&state.selectedTicket){loadMessages();connectTicketMessages()}else if(state.messageChannel){db.removeChannel(state.messageChannel);state.messageChannel=null}document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>go(b.dataset.route));if(page==='live-training'){$('ae-live-refresh')?.addEventListener('click',mountLiveTraining);void mountLiveTraining()}
  const sidebarButton=$('ae-sidebar-toggle');
  if(sidebarButton){
   const applySidebar=expanded=>{
@@ -186,7 +235,7 @@ function connectLive(){
  .on('postgres_changes',{event:'*',schema:'public',table:'lesson_progress',filter:'user_id=eq.'+userId},refreshLive)
  .subscribe();
 }
-async function boot(){const {data:{user},error}=await db.auth.getUser();if(error||!user){logoutToLogin();return}state.user=user;document.body.classList.remove('ae-authenticated');$('login-view').hidden=true;$('student-view').hidden=true;$('sidebar-email').textContent=user.email;$('top-email').textContent=user.email;$('student-content').innerHTML='<div class="panel">Loading your account…</div>';await load();await loadEbooks();if(state.user?.id!==user.id)return;const route=location.hash.replace(/^#\/?/,'');state.classroomId=route.startsWith('classroom/')?route.slice(10):null;state.page=state.classroomId?'classroom':['dashboard','courses','orders','ebooks','documents','support','settings'].includes(route)?route:'dashboard';render();$('student-view').inert=false;$('student-view').hidden=false;$('auth-check').hidden=true;document.body.classList.add('ae-authenticated');connectLive()}
+async function boot(){const {data:{user},error}=await db.auth.getUser();if(error||!user){logoutToLogin();return}state.user=user;document.body.classList.remove('ae-authenticated');$('login-view').hidden=true;$('student-view').hidden=true;$('sidebar-email').textContent=user.email;$('top-email').textContent=user.email;$('student-content').innerHTML='<div class="panel">Loading your account…</div>';await load();await loadEbooks();if(state.user?.id!==user.id)return;const route=location.hash.replace(/^#\/?/,'');state.classroomId=route.startsWith('classroom/')?route.slice(10):null;state.page=state.classroomId?'classroom':['dashboard','courses','orders','ebooks','documents','support','settings','live-training'].includes(route)?route:'dashboard';render();$('student-view').inert=false;$('student-view').hidden=false;$('auth-check').hidden=true;document.body.classList.add('ae-authenticated');connectLive()}
 const passwordToggle=$('toggle-password');
 if(passwordToggle){
  passwordToggle.addEventListener('click',()=>{
@@ -201,7 +250,7 @@ if(passwordToggle){
 $('login').addEventListener('submit',async e=>{e.preventDefault();const submit=e.target.querySelector('button');submit.disabled=true;const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});submit.disabled=false;if(error){$('login-status').textContent='Sign in failed: '+error.message;return}await boot()});
 $('signout').onclick=async()=>{await db.auth.signOut();history.replaceState(null,'',location.pathname);logoutToLogin()};
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=e=>{e.preventDefault();go(b.dataset.page)});
-window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'');if(state.user&&(page.startsWith('classroom/')||['dashboard','courses','orders','ebooks','documents','support','settings'].includes(page))){state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;render()}});
+window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'');if(state.user&&(page.startsWith('classroom/')||['dashboard','courses','orders','ebooks','documents','support','settings','live-training'].includes(page))){state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;render()}});
 window.addEventListener('focus',()=>{if(state.user)void refreshLive()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user)void refreshLive()});
 window.addEventListener('message',event=>{
