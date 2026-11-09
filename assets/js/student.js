@@ -129,14 +129,26 @@ async function mountLiveTraining(){
   };
   holder.querySelectorAll('[data-live-register]').forEach(button=>button.onclick=()=>change(button,'register',button.dataset.liveRegister));
   holder.querySelectorAll('[data-live-cancel]').forEach(button=>button.onclick=()=>change(button,'unregister',button.dataset.liveCancel));
-  holder.querySelectorAll('[data-live-join]').forEach(button=>button.onclick=async()=>{
-   button.disabled=true;
-   try{const result=await liveTrainingApi('join',{session_id:button.dataset.liveJoin});window.open(result.url,'_blank','noopener,noreferrer');notify('Opening your Teams session.')}
-   catch(error){notify(error.message,true);button.disabled=false}
-  });
+  holder.querySelectorAll('[data-live-join]').forEach(button=>button.onclick=()=>go('meeting/'+button.dataset.liveJoin));
  }catch(error){if(holder.isConnected)holder.innerHTML='<div class="empty"><strong>Unable to load live sessions</strong><p>'+esc(error.message)+'</p><button type="button" class="action secondary" id="ae-live-retry">Try again</button></div>';holder.querySelector('#ae-live-retry')?.addEventListener('click',mountLiveTraining)}
  finally{if(refresh?.isConnected)refresh.disabled=false}
 }
+let activeMeetingRoom=null;
+function meetingRoomPage(){return '<section id="ae-embedded-room"><div class="panel"><h2>Loading live classroom…</h2><p>Preparing the secure meeting room inside the portal.</p></div></section>'}
+async function mountEmbeddedRoom(){
+ const root=$('ae-embedded-room'),id=state.meetingId;
+ if(!root||!id||state.page!=='meeting')return;
+ try{
+  const {createEmbeddedMeeting}=await import('./embedded-meeting.js?v=20261109-screenings4u');
+  if(state.page!=='meeting'||state.meetingId!==id||!root.isConnected)return;
+  activeMeetingRoom=createEmbeddedMeeting({root,api:liveTrainingApi,sessionId:id,escapeHTML:esc,onExit:()=>go('live-training')});
+ }catch(e){
+  console.error('Embedded classroom unavailable',e);
+  if(root.isConnected)root.innerHTML='<section class="panel"><h2>Unable to initialize classroom</h2><p>'+esc(e.message||'Meeting components could not load.')+'</p><button type="button" class="action secondary" id="ae-room-return">Back to sessions</button></section>';
+  root.querySelector('#ae-room-return')?.addEventListener('click',()=>go('live-training'));
+ }
+}
+function releaseMeetingRoom(){const room=activeMeetingRoom;activeMeetingRoom=null;if(room)void room.dispose()}
 function ordersPage(){return heading('Orders & purchases','View your purchases and download your Andre Erving PDF receipts.')+
  '<section class="panel ae-orders-panel"><div class="ae-orders-panel-header"><h2>Purchase history</h2><span class="ae-order-count">'+state.orders.length+' orders</span></div>'+
  (state.orders.length?'<div class="data-list ae-orders-list">'+state.orders.map(o=>'<div class="data-row ae-order-row"><div class="ae-order-details"><strong>'+esc(o.order_number)+'</strong><p>Placed '+esc(fmtDate(o.created_at))+'</p></div><div class="ae-order-actions"><div class="ae-order-payment"><strong>'+esc(money(o.total,o.currency))+'</strong><span class="tag">'+esc(o.status)+'</span></div>'+
@@ -148,7 +160,7 @@ function supportPage(){const selected=state.tickets.find(t=>t.id===state.selecte
 '<div class="ticket-grid"><section class="panel"><h2>Start a support request</h2><form id="ticket-form"><label class="form-field">Subject<input name="subject" minlength="3" maxlength="180" required placeholder="How can we help?"></label><label class="form-field">Category<select name="category"><option value="general">General question</option><option value="course">Courses & learning</option><option value="billing">Orders & billing</option><option value="technical">Technical help</option><option value="documents">Documents</option></select></label><label class="form-field">Message<textarea name="message" minlength="1" maxlength="10000" required placeholder="Describe what you need help with"></textarea></label><button class="primary" type="submit">Submit ticket</button></form></section>'+
 '<section class="panel"><h2>My support tickets</h2>'+(state.tickets.length?state.tickets.map(t=>'<button class="ticket-button '+(selected?.id===t.id?'active':'')+'" data-ticket="'+esc(t.id)+'"><strong>'+esc(t.subject)+'</strong><p class="muted">'+esc(fmtDate(t.created_at))+' · '+esc(t.status.replace('_',' '))+'</p></button>').join(''):empty('No support tickets yet','Submit a request to start a conversation.'))+'</section></div>'+
 (selected?'<section class="panel"><h2>'+esc(selected.subject)+' <span class="tag '+esc(selected.status)+'">'+esc(selected.status.replace('_',' '))+'</span></h2><div id="ticket-messages" class="message-list">Loading messages…</div>'+(selected.status==='closed'?'<p class="muted">This ticket is closed.</p>':'<form id="message-form" class="form-actions"><label class="form-field">Reply<textarea name="message" required maxlength="10000" placeholder="Write a reply…"></textarea></label><button class="primary" type="submit">Send reply</button></form>')+'</section>':'')}
-function render(){if(!state.user)return;let page=state.page;document.body.classList.toggle('ae-dashboard-view',page==='dashboard');document.body.classList.toggle('ae-classroom-route',page==='classroom');const titles={classroom:'Course player',dashboard:'Dashboard',courses:'My courses',orders:'Orders & purchases',ebooks:'My eBooks',documents:'My documents',support:'Support center',settings:'Account settings','live-training':'Live Training Sessions'};if(!titles[page])page='dashboard';state.page=page;$('top-heading').textContent=titles[page];document.querySelectorAll('[data-page]').forEach(b=>{b.classList.toggle('active',b.dataset.page===page);b.setAttribute('aria-current',b.dataset.page===page?'page':'false')});$('student-content').innerHTML=({dashboard,courses:coursesPage,orders:ordersPage,ebooks:ebookPage,documents:documentsPage,support:supportPage,settings,classroom:classroomPage,'live-training':liveTrainingPage})[page]();if(page==='support'&&state.selectedTicket){loadMessages();connectTicketMessages()}else if(state.messageChannel){db.removeChannel(state.messageChannel);state.messageChannel=null}document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>go(b.dataset.route));if(page==='live-training'){$('ae-live-refresh')?.addEventListener('click',mountLiveTraining);void mountLiveTraining()}
+function render(){if(!state.user)return;let page=state.page;document.body.classList.toggle('ae-dashboard-view',page==='dashboard');document.body.classList.toggle('ae-classroom-route',page==='classroom');const titles={classroom:'Course player',dashboard:'Dashboard',courses:'My courses',orders:'Orders & purchases',ebooks:'My eBooks',documents:'My documents',support:'Support center',settings:'Account settings','live-training':'Live Training Sessions',meeting:'Live Classroom'};if(!titles[page])page='dashboard';state.page=page;$('top-heading').textContent=titles[page];document.querySelectorAll('[data-page]').forEach(b=>{b.classList.toggle('active',b.dataset.page===page);b.setAttribute('aria-current',b.dataset.page===page?'page':'false')});$('student-content').innerHTML=({dashboard,courses:coursesPage,orders:ordersPage,ebooks:ebookPage,documents:documentsPage,support:supportPage,settings,classroom:classroomPage,'live-training':liveTrainingPage,meeting:meetingRoomPage})[page]();if(page==='support'&&state.selectedTicket){loadMessages();connectTicketMessages()}else if(state.messageChannel){db.removeChannel(state.messageChannel);state.messageChannel=null}document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>go(b.dataset.route));if(page==='live-training'){$('ae-live-refresh')?.addEventListener('click',mountLiveTraining);void mountLiveTraining()}if(page==='meeting')void mountEmbeddedRoom()
  const sidebarButton=$('ae-sidebar-toggle');
  if(sidebarButton){
   const applySidebar=expanded=>{
@@ -159,7 +171,7 @@ function render(){if(!state.user)return;let page=state.page;document.body.classL
   applySidebar(false);
   sidebarButton.addEventListener('click',()=>applySidebar(!document.body.classList.contains('ae-classroom-show-nav')));
  }else document.body.classList.remove('ae-classroom-show-nav');document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>go('classroom/'+b.dataset.course));document.querySelectorAll('[data-extend-course]').forEach(b=>b.onclick=()=>purchaseExtension(b));document.querySelectorAll('[data-ticket]').forEach(b=>b.onclick=()=>{state.selectedTicket=b.dataset.ticket;render()});document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>download(b.dataset.download));document.querySelectorAll('[data-order-receipt]').forEach(b=>b.onclick=()=>downloadReceipt(b));document.querySelectorAll('[data-ebook]').forEach(b=>b.onclick=()=>downloadEbook(b.dataset.ebook));$('profile-form')?.addEventListener('submit',saveProfile);$('ticket-form')?.addEventListener('submit',createTicket);$('message-form')?.addEventListener('submit',sendMessage)}
-function go(page){if(!state.user)return;state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;if(location.hash!=='#/'+page)history.pushState(null,'','#/'+page);render();document.querySelector('.student-main')?.scrollTo(0,0)}
+function go(page){if(!state.user)return;if(state.page==='meeting'&&!page.startsWith('meeting/'))releaseMeetingRoom();state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.meetingId=page.startsWith('meeting/')?page.slice(8):null;state.page=state.classroomId?'classroom':state.meetingId?'meeting':page;if(location.hash!=='#/'+page)history.pushState(null,'','#/'+page);render();document.querySelector('.student-main')?.scrollTo(0,0)}
 async function downloadReceipt(button){
  const id=button.dataset.orderReceipt;
  if(!state.orders.some(o=>o.id===id&&['paid','completed'].includes(o.status)))return notify('This order does not have a confirmed receipt.',true);
@@ -246,6 +258,7 @@ async function refreshLive(){
   if(state.user?.id!==userId)return;
   if(currentViewFingerprint()===before)return;
   if(state.page==='live-training'){void mountLiveTraining();return}
+  if(state.page==='meeting')return;
   if(state.page==='classroom'){
    const valid=state.enrollments.some(e=>e.course_id===state.classroomId&&['active','completed'].includes(e.status)&&(!e.expires_at||new Date(e.expires_at)>new Date()));
    if(!valid)render();
@@ -277,7 +290,7 @@ function connectLive(){
  .on('postgres_changes',{event:'*',schema:'public',table:'live_training_session_updates'},()=>{if(state.page==='live-training')void mountLiveTraining()})
  .subscribe();
 }
-async function boot(){const {data:{user},error}=await db.auth.getUser();if(error||!user){logoutToLogin();return}state.user=user;document.body.classList.remove('ae-authenticated');$('login-view').hidden=true;$('student-view').hidden=true;$('sidebar-email').textContent=user.email;$('top-email').textContent=user.email;$('student-content').innerHTML='<div class="panel">Loading your account…</div>';await load();await loadEbooks();if(state.user?.id!==user.id)return;const route=location.hash.replace(/^#\/?/,'');state.classroomId=route.startsWith('classroom/')?route.slice(10):null;state.page=state.classroomId?'classroom':['dashboard','courses','orders','ebooks','documents','support','settings','live-training'].includes(route)?route:'dashboard';render();$('student-view').inert=false;$('student-view').hidden=false;$('auth-check').hidden=true;document.body.classList.add('ae-authenticated');connectLive()}
+async function boot(){const {data:{user},error}=await db.auth.getUser();if(error||!user){logoutToLogin();return}state.user=user;document.body.classList.remove('ae-authenticated');$('login-view').hidden=true;$('student-view').hidden=true;$('sidebar-email').textContent=user.email;$('top-email').textContent=user.email;$('student-content').innerHTML='<div class="panel">Loading your account…</div>';await load();await loadEbooks();if(state.user?.id!==user.id)return;const route=location.hash.replace(/^#\/?/,'');state.classroomId=route.startsWith('classroom/')?route.slice(10):null;state.meetingId=route.startsWith('meeting/')?route.slice(8):null;state.page=state.classroomId?'classroom':state.meetingId?'meeting':['dashboard','courses','orders','ebooks','documents','support','settings','live-training'].includes(route)?route:'dashboard';render();$('student-view').inert=false;$('student-view').hidden=false;$('auth-check').hidden=true;document.body.classList.add('ae-authenticated');connectLive()}
 const passwordToggle=$('toggle-password');
 if(passwordToggle){
  passwordToggle.addEventListener('click',()=>{
@@ -292,7 +305,7 @@ if(passwordToggle){
 $('login').addEventListener('submit',async e=>{e.preventDefault();const submit=e.target.querySelector('button');submit.disabled=true;const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});submit.disabled=false;if(error){$('login-status').textContent='Sign in failed: '+error.message;return}await boot()});
 $('signout').onclick=async()=>{await db.auth.signOut();history.replaceState(null,'',location.pathname);logoutToLogin()};
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=e=>{e.preventDefault();go(b.dataset.page)});
-window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'');if(state.user&&(page.startsWith('classroom/')||['dashboard','courses','orders','ebooks','documents','support','settings','live-training'].includes(page))){state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;render()}});
+window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'');if(!state.user)return;if(!page.startsWith('classroom/')&&!page.startsWith('meeting/')&&!['dashboard','courses','orders','ebooks','documents','support','settings','live-training'].includes(page))return;if(state.page==='meeting'&&!page.startsWith('meeting/'))releaseMeetingRoom();state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.meetingId=page.startsWith('meeting/')?page.slice(8):null;state.page=state.classroomId?'classroom':state.meetingId?'meeting':page;render()});
 // The database change stream updates in place; focus/visibility must not redraw the portal.
 // Refresh session cards when the page becomes visible, only if the server data changed.
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user&&state.page==='live-training')void mountLiveTraining()});
