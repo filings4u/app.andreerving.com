@@ -109,3 +109,33 @@ body.ae-focus-mode .rc-tab-pane{max-width:none}
 /* Instructor/student classroom primary action color */
 .rc-rail-primary{background:#c99732!important;color:#122c49!important;border-color:#c99732!important}
 .rc-rail-primary:hover{background:#b68425!important;color:#122c49!important}
+
+/* Mobile lesson outline and white-on-navy course branding. */
+.ae-course-outline-brand{display:block;padding:18px 15px 10px;text-decoration:none}
+.ae-course-outline-brand img{display:block;width:min(100%,205px);height:auto;max-height:68px;object-fit:contain;object-position:left center}
+.ae-course-outline-toggle{display:none;align-items:center;justify-content:center;gap:8px;min-height:41px;padding:9px 12px;border:1px solid #d5e0ed;border-radius:9px;background:#f4f7fb;color:#163754;font-size:12px;font-weight:800}
+@media(max-width:680px){
+ body.ae-player-page{max-width:100%;overflow-x:hidden}
+ .ae-player-topbar{display:flex;flex-wrap:wrap;gap:8px 10px;position:sticky;top:0;z-index:25;background:#fff;padding:10px!important}
+ .ae-player-back{min-width:0!important;flex:1 1 140px}
+ .rc-full-logo{max-width:155px;width:100%!important}
+ .ae-course-outline-toggle{display:inline-flex;order:2}
+ .ae-player-exit{order:3;padding:9px!important}
+ .ae-focus-toggle{order:4}
+ .ae-player-shell{display:flex!important;flex-direction:column!important;min-width:0}
+ .ae-player-outline{display:none!important;max-height:min(65dvh,560px)!important;overflow-y:auto!important;overflow-x:hidden!important;position:relative!important;width:100%!important;min-width:0!important}
+ body.ae-course-outline-open:not(.ae-focus-mode) .ae-player-outline{display:block!important}
+ .ae-player-main{width:100%!important;min-width:0;padding:18px 12px 32px!important;overflow:visible}
+ #lesson-view,.ae-lesson-media,.ae-lesson-body{max-width:100%;min-width:0;overflow-wrap:anywhere}
+ .rc-lesson-rail{grid-template-columns:minmax(0,1fr)!important;width:100%;min-width:0}
+ .ae-player-footer{display:flex!important;flex-wrap:wrap;gap:10px}
+ .ae-player-footer-actions{display:flex;flex-wrap:wrap;gap:8px}
+ .rc-tab-nav{display:flex;overflow-x:auto;max-width:100%;scrollbar-width:thin}
+ .rc-tab-nav button{flex:0 0 auto}
+ .ae-player-main img,.ae-player-main video,.ae-player-main iframe{max-width:100%;height:auto}
+}
+@media(max-width:390px){
+ .ae-player-topbar{gap:7px!important}
+ .ae-course-outline-toggle{padding:8px;font-size:11px}
+ .ae-player-exit{font-size:10px}
+}
