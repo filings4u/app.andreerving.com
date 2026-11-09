@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,
 const fmtDate=v=>v?new Date(v).toLocaleDateString():'—',money=(v,c='USD')=>new Intl.NumberFormat('en-US',{style:'currency',currency:c||'USD'}).format(Number(v)||0);
 const state={user:null,page:'dashboard',profile:null,orders:[],enrollments:[],courses:[],documents:[],progress:[],tickets:[],selectedTicket:null,loaded:false,refreshing:false,ebookOrders:[],extensionPrices:{},channel:null,messageChannel:null};
 function notify(message,error=false){const n=$('toast');n.querySelector('.student-toast-content').textContent=message;n.className='visible'+(error?' error':'');n.querySelector('.student-toast-dismiss').onclick=()=>{n.className=''};setTimeout(()=>{if(n.querySelector('.student-toast-content').textContent===message)n.className=''},4200)}
-const heading=(title,sub)=>'<div class="page-heading"><span class="eyebrow">MY ACCOUNT / '+esc(title.toUpperCase())+'</span><h1>'+esc(title)+'</h1><p>'+esc(sub)+'</p></div>';
+const heading=(title,sub)=>'<div class="page-heading"><h1>'+esc(title)+'</h1></div>';
 const empty=(title,sub,link='')=>'<div class="empty"><strong>'+esc(title)+'</strong><div>'+esc(sub)+'</div>'+link+'</div>';
 const button=(label,page)=>'<button class="action secondary" data-route="'+page+'">'+esc(label)+'</button>';
 const progressFor=id=>{
@@ -85,9 +85,9 @@ function dashboard(){const active=state.enrollments.filter(e=>['active','complet
 function coursesPage(){return heading('My courses','Access your programs and track learning progress.')+(state.enrollments.length?courseCards(state.enrollments):'<section class="panel">'+empty('You are not enrolled yet','Your courses will appear here after enrollment.','<div class="row-actions"><a class="action" target="_blank" rel="noopener noreferrer" href="https://andreerving.com/courses.html">Explore courses ↗</a></div>')+'</section>')}
 
 function liveTrainingPage(){
- return heading('Live Training Sessions','Register for instructor-led sessions, review your training schedule, and join Microsoft Teams.')+
- '<section class="panel ae-live-training-panel"><div class="ae-live-training-header"><div><span class="eyebrow">FREIGHT BROKER TRAINING / LIVE LEARNING</span><h2>Upcoming live sessions</h2><p class="muted">Select an available session to reserve your seat. Your meeting link opens 30 minutes before class.</p></div><button class="action secondary" id="ae-live-refresh" type="button">Refresh sessions</button></div><div id="ae-live-training-sessions"><p class="muted">Loading live training sessions…</p></div></section>'+
- '<section class="panel ae-live-training-help"><h2>How live training works</h2><p>Choose a session, register to reserve a seat, then use <strong>Join Meeting</strong> when the class opens. Dates display in your local time. Active enrollment in the associated course is required.</p></section>';
+ return ''+
+ '<section class="panel ae-live-training-panel"><div class="ae-live-training-header"><div><h2>Upcoming live sessions</h2></div><button class="action secondary" id="ae-live-refresh" type="button">Refresh sessions</button></div><div id="ae-live-training-sessions"><p class="muted">Loading live training sessions…</p></div></section>'+
+ '';
 }
 async function liveTrainingApi(action,body={}){
  const {data,error}=await db.functions.invoke('andre-live-training',{body:{action,...body}});
@@ -142,16 +142,16 @@ async function mountLiveTraining(){
     try{
       const result=await liveTrainingApi('join',{session_id:button.dataset.liveJoin});
       const url=new URL(result.url);
-      if(url.protocol!=='https:'||url.hostname!=='teams.microsoft.com')throw Error('The meeting link is not a valid Microsoft Teams URL.');
+      if(url.protocol!=='https:'||url.hostname!=='teams.microsoft.com')throw Error('The meeting link is invalid.');
       if(tab)tab.location.replace(url.toString());else window.location.href=url.toString();
-    }catch(error){if(tab)tab.close();notify(error.message||'Unable to open Teams meeting.',true)}
+    }catch(error){if(tab)tab.close();notify(error.message||'Unable to open meeting.',true)}
     finally{button.disabled=false}
    });
  }catch(error){if(holder.isConnected)holder.innerHTML='<div class="empty"><strong>Unable to load live sessions</strong><p>'+esc(error.message)+'</p><button type="button" class="action secondary" id="ae-live-retry">Try again</button></div>';holder.querySelector('#ae-live-retry')?.addEventListener('click',mountLiveTraining)}
  finally{if(refresh?.isConnected)refresh.disabled=false}
 }
 let activeMeetingRoom=null;
-function meetingRoomPage(){return '<section class="panel"><h2>Live Training</h2><p>Open Live Training Sessions and select Join Meeting to enter Microsoft Teams using the saved meeting link.</p><button class="action secondary" type="button" id="ae-room-return">Back to Live Training Sessions</button></section>'}
+function meetingRoomPage(){return '<section class="panel"><h2>Live Training</h2><p>Select Join Meeting from your live training schedule.</p><button class="action secondary" type="button" id="ae-room-return">Back to Live Training Sessions</button></section>'}
 async function mountEmbeddedRoom(){
  const root=$('ae-embedded-room'),id=state.meetingId;
  if(!root||!id||state.page!=='meeting')return;
