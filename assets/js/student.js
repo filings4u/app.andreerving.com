@@ -136,12 +136,22 @@ async function mountLiveTraining(){
   };
   holder.querySelectorAll('[data-live-register]').forEach(button=>button.onclick=()=>change(button,'register',button.dataset.liveRegister));
   holder.querySelectorAll('[data-live-cancel]').forEach(button=>button.onclick=()=>change(button,'unregister',button.dataset.liveCancel));
-  holder.querySelectorAll('[data-live-join]').forEach(button=>button.onclick=()=>go('meeting/'+button.dataset.liveJoin));
+  holder.querySelectorAll('[data-live-join]').forEach(button=>button.onclick=async()=>{
+    const tab=window.open('about:blank','_blank');
+    button.disabled=true;
+    try{
+      const result=await liveTrainingApi('join',{session_id:button.dataset.liveJoin});
+      const url=new URL(result.url);
+      if(url.protocol!=='https:'||url.hostname!=='teams.microsoft.com')throw Error('The meeting link is not a valid Microsoft Teams URL.');
+      if(tab)tab.location.replace(url.toString());else window.location.href=url.toString();
+    }catch(error){if(tab)tab.close();notify(error.message||'Unable to open Teams meeting.',true)}
+    finally{button.disabled=false}
+   });
  }catch(error){if(holder.isConnected)holder.innerHTML='<div class="empty"><strong>Unable to load live sessions</strong><p>'+esc(error.message)+'</p><button type="button" class="action secondary" id="ae-live-retry">Try again</button></div>';holder.querySelector('#ae-live-retry')?.addEventListener('click',mountLiveTraining)}
  finally{if(refresh?.isConnected)refresh.disabled=false}
 }
 let activeMeetingRoom=null;
-function meetingRoomPage(){return '<section id="ae-embedded-room"><div class="panel"><h2>Loading live classroom…</h2><p>Preparing the secure meeting room inside the portal.</p></div></section>'}
+function meetingRoomPage(){return '<section class="panel"><h2>Live Training</h2><p>Open Live Training Sessions and select Join Meeting to enter Microsoft Teams using the saved meeting link.</p><button class="action secondary" type="button" id="ae-room-return">Back to Live Training Sessions</button></section>'}
 async function mountEmbeddedRoom(){
  const root=$('ae-embedded-room'),id=state.meetingId;
  if(!root||!id||state.page!=='meeting')return;
