@@ -240,3 +240,59 @@ body.ae-classroom-route .ae-classroom-frame{flex:1 1 auto;height:auto!important;
 .action:not(.secondary):not(.danger):hover,button.primary:hover{background:#b68425;color:#142e4c;border-color:#b68425}
 body.ae-dashboard-view .course-card .action{background:#c99732;color:#142e4c;border-color:#c99732}
 body.ae-dashboard-view .course-card .action:hover{background:#b68425;color:#142e4c}
+
+/* Responsive customer portal: accessible slide-out navigation, compact page layouts. */
+.ae-mobile-header{display:flex;align-items:center;gap:12px;min-width:0}
+.ae-mobile-nav-toggle,.ae-mobile-nav-overlay{display:none}
+.student-main,.student-content,.panel,.course-card,.data-row{min-width:0}
+.student-content img,.student-content video,.student-content iframe{max-width:100%}
+.student-content .data-row{overflow-wrap:anywhere}
+@media(max-width:760px){
+ html,body.student-app{width:100%;max-width:100%;overflow-x:hidden}
+ .student-shell{display:flex!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+ .student-main{height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;width:100%;flex:1}
+ .student-sidebar{position:fixed!important;z-index:102!important;inset:0 auto 0 0!important;display:flex!important;flex-direction:column!important;width:min(85vw,310px)!important;min-width:0!important;height:100dvh!important;max-height:100dvh!important;padding:19px 13px!important;overflow:hidden!important;transform:translateX(-105%);transition:transform .23s ease;box-shadow:10px 0 30px #081c3630}
+ body.ae-mobile-nav-open .student-sidebar{transform:translateX(0)}
+ .student-sidebar .student-brand{min-height:73px!important;height:73px!important;padding:0 10px 17px!important}
+ .student-sidebar .customer-sidebar-logo{width:auto!important;max-width:190px!important;max-height:56px!important}
+ .student-sidebar .sidebar-label{display:block!important;margin:20px 13px 8px}
+ .student-sidebar .sidebar-footer{display:block!important;padding:15px 12px}
+ .student-sidebar #student-nav{display:grid!important;grid-template-columns:1fr!important;gap:4px!important;overflow-y:auto!important;overflow-x:hidden!important;align-content:start!important;padding:8px 0!important;flex:1;min-height:0}
+ .student-sidebar #student-nav a{display:flex!important;width:100%!important;min-height:44px!important;white-space:normal!important;flex:none!important}
+ .ae-mobile-nav-toggle{display:inline-flex!important;align-items:center;justify-content:center;width:43px;height:43px;min-width:43px;border:1px solid #d3e0ed;border-radius:10px;background:#f5f8fc;color:#193c62;font-size:23px;line-height:1;touch-action:manipulation}
+ .ae-mobile-nav-toggle:focus-visible{outline:3px solid #d1a446;outline-offset:2px}
+ .ae-mobile-nav-overlay:not([hidden]){display:block!important;position:fixed;z-index:101;inset:0;border:0;border-radius:0;background:#07192daa;cursor:pointer}
+ body.ae-mobile-nav-open{overflow:hidden}
+ .student-topbar{position:sticky!important;top:0;z-index:20!important;min-height:66px!important;padding:10px 14px!important;gap:10px}
+ .student-topbar strong{font-size:14px!important}
+ .top-right{gap:8px!important}
+ #signout{min-height:40px;padding:9px 11px!important}
+ .student-content{width:100%!important;padding:19px 14px 45px!important;max-width:100%!important}
+ .student-content .cards,.student-content .metric-grid,.student-content .ticket-grid,.student-content .form-grid{grid-template-columns:minmax(0,1fr)!important}
+ .student-content .panel,.student-content .metric,.student-content .course-card{max-width:100%;min-width:0;padding:18px 15px}
+ .student-content .row-actions{display:flex;flex-wrap:wrap;gap:9px}
+ .student-content .row-actions button,.student-content .row-actions a{max-width:100%;white-space:normal}
+ .student-content .ae-live-training-header{flex-wrap:wrap;align-items:center}
+ .student-content .ae-live-session{min-width:0;padding:18px 14px}
+ .student-content .ae-live-session-details{overflow-wrap:anywhere}
+ .student-content .ae-orders-panel-header{align-items:flex-start;flex-wrap:wrap}
+ .student-content .ae-orders-list .data-row{overflow-wrap:anywhere}
+ .student-content .ae-ebook-grid{grid-template-columns:minmax(0,1fr)!important}
+ .student-content .ae-classroom-head{align-items:stretch!important}
+ .student-content .ae-classroom-controls{justify-content:flex-start!important}
+ body.ae-classroom-route .student-main{height:100dvh!important;overflow-y:auto!important}
+ body.ae-classroom-route .student-content{height:auto!important;min-height:calc(100dvh - 66px);overflow:visible!important;display:flex;flex-direction:column;padding:12px 10px 18px!important}
+ body.ae-classroom-route .ae-classroom-frame{height:max(580px,calc(100dvh - 205px))!important;min-height:580px!important;flex:none!important}
+ body.ae-classroom-route .student-topbar{display:flex!important}
+ body.ae-classroom-route .student-sidebar{transform:translateX(-105%)!important}
+ body.ae-classroom-route.ae-mobile-nav-open .student-sidebar{transform:translateX(0)!important}
+ #toast{max-width:calc(100vw - 24px);left:12px;right:12px;bottom:12px;overflow-wrap:anywhere}
+}
+@media(max-width:440px){
+ .student-topbar #top-heading{font-size:12px!important}
+ .student-content{padding:16px 11px 38px!important}
+ .ae-live-session-actions .action{flex:1 1 140px}
+ .student-content .hero{padding:20px 15px}
+ .student-content .metric-grid{gap:11px}
+}
+@media(prefers-reduced-motion:reduce){.student-sidebar{transition:none!important}}
