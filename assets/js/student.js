@@ -95,15 +95,20 @@ async function liveTrainingApi(action,body={}){
  if(data?.error)throw new Error(data.error);
  return data;
 }
+let latestLiveSessionsSignature='';let liveFetchSequence=0;
 async function mountLiveTraining(){
  const holder=$('ae-live-training-sessions');
  if(!holder||state.page!=='live-training')return;
  const refresh=$('ae-live-refresh');
+ const fetchSequence=++liveFetchSequence;
  if(refresh)refresh.disabled=true;
  try{
   const result=await liveTrainingApi('student_list');
-  if(state.page!=='live-training'||!holder.isConnected)return;
+  if(state.page!=='live-training'||!holder.isConnected||fetchSequence!==liveFetchSequence)return;
   const sessions=result.sessions||[];
+  const signature=JSON.stringify({sessions,joinAvailability:sessions.map(x=>x.registered&&Date.now()>=new Date(x.start_at).getTime()-1800000&&Date.now()<=new Date(x.end_at).getTime()+3600000)});
+  if(signature===latestLiveSessionsSignature&&holder.dataset.loaded==='1')return;
+  latestLiveSessionsSignature=signature;holder.dataset.loaded='1';
   const fmt=(value,options)=>new Date(value).toLocaleString(undefined,options);
   holder.innerHTML=sessions.length?'<div class="ae-live-session-grid">'+sessions.map(session=>{
    const start=new Date(session.start_at).getTime(),end=new Date(session.end_at).getTime(),now=Date.now();
@@ -212,9 +217,44 @@ async function loadEbooks(){
   state.ebookOrders=Array.isArray(json.items)?json.items:[];
  }catch(error){console.warn('eBook library loading issue',error);if(state.page==='ebooks')notify('Your eBooks could not load. Try this page again.',true)}
 }
-let loadingLive=false;async function refreshLive(){
- if(loadingLive||!state.user||document.querySelector('#student-content form:focus-within'))return;
- loadingLive=true;try{await load();await loadEbooks();if(state.user&&state.page!=='classroom')render();else if(state.user&&state.page==='classroom'){const ok=state.enrollments.some(e=>e.course_id===state.classroomId&&['active','completed'].includes(e.status)&&(!e.expires_at||new Date(e.expires_at)>new Date()));if(!ok)render()}}finally{loadingLive=false}
+// Realtime changes are applied only when the current view's relevant data changes.
+// Never replace a live-session page or an active form just because the browser gained focus.
+function currentViewFingerprint(){
+ const page=state.page;
+ const values=page==='dashboard'?[state.orders,state.enrollments,state.courses,state.progress,state.tickets,state.profile]:
+ page==='courses'?[state.enrollments,state.courses,state.progress,state.extensionPrices]:
+ page==='orders'?[state.orders]:
+ page==='ebooks'?[state.ebookOrders]:
+ page==='documents'?[state.documents]:
+ page==='support'?[state.tickets]:
+ page==='settings'?[state.profile]:
+ page==='classroom'?[state.enrollments]:
+ page==='live-training'?[state.enrollments]:[];
+ return JSON.stringify(values);
+}
+let loadingLive=false;let pendingLiveRefresh=false;
+async function refreshLive(){
+ if(!state.user)return;
+ if(loadingLive){pendingLiveRefresh=true;return}
+ if(document.querySelector('#student-content form:focus-within')){pendingLiveRefresh=true;return}
+ loadingLive=true;
+ try{
+  const userId=state.user.id;
+  const before=currentViewFingerprint();
+  await load();
+  if(state.page==='ebooks')await loadEbooks();
+  if(state.user?.id!==userId)return;
+  if(currentViewFingerprint()===before)return;
+  if(state.page==='live-training'){void mountLiveTraining();return}
+  if(state.page==='classroom'){
+   const valid=state.enrollments.some(e=>e.course_id===state.classroomId&&['active','completed'].includes(e.status)&&(!e.expires_at||new Date(e.expires_at)>new Date()));
+   if(!valid)render();
+   return;
+  }
+  if(document.querySelector('#student-content form:focus-within'))return;
+  render();
+ }catch(error){console.warn('Background account synchronization failed',error)}
+ finally{loadingLive=false;if(pendingLiveRefresh){pendingLiveRefresh=false;setTimeout(()=>{if(state.user&&!document.querySelector('#student-content form:focus-within'))void refreshLive()},1000)}}
 }
 function connectTicketMessages(){
  if(state.messageChannel){db.removeChannel(state.messageChannel);state.messageChannel=null}
@@ -233,6 +273,8 @@ function connectLive(){
  .on('postgres_changes',{event:'*',schema:'public',table:'customer_documents',filter:'user_id=eq.'+userId},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'support_tickets',filter:'user_id=eq.'+userId},refreshLive)
  .on('postgres_changes',{event:'*',schema:'public',table:'lesson_progress',filter:'user_id=eq.'+userId},refreshLive)
+ .on('postgres_changes',{event:'*',schema:'public',table:'live_training_attendees',filter:'user_id=eq.'+userId},()=>{if(state.page==='live-training')void mountLiveTraining()})
+ .on('postgres_changes',{event:'*',schema:'public',table:'live_training_session_updates'},()=>{if(state.page==='live-training')void mountLiveTraining()})
  .subscribe();
 }
 async function boot(){const {data:{user},error}=await db.auth.getUser();if(error||!user){logoutToLogin();return}state.user=user;document.body.classList.remove('ae-authenticated');$('login-view').hidden=true;$('student-view').hidden=true;$('sidebar-email').textContent=user.email;$('top-email').textContent=user.email;$('student-content').innerHTML='<div class="panel">Loading your account…</div>';await load();await loadEbooks();if(state.user?.id!==user.id)return;const route=location.hash.replace(/^#\/?/,'');state.classroomId=route.startsWith('classroom/')?route.slice(10):null;state.page=state.classroomId?'classroom':['dashboard','courses','orders','ebooks','documents','support','settings','live-training'].includes(route)?route:'dashboard';render();$('student-view').inert=false;$('student-view').hidden=false;$('auth-check').hidden=true;document.body.classList.add('ae-authenticated');connectLive()}
@@ -251,8 +293,9 @@ $('login').addEventListener('submit',async e=>{e.preventDefault();const submit=e
 $('signout').onclick=async()=>{await db.auth.signOut();history.replaceState(null,'',location.pathname);logoutToLogin()};
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=e=>{e.preventDefault();go(b.dataset.page)});
 window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'');if(state.user&&(page.startsWith('classroom/')||['dashboard','courses','orders','ebooks','documents','support','settings','live-training'].includes(page))){state.classroomId=page.startsWith('classroom/')?page.slice(10):null;state.page=state.classroomId?'classroom':page;render()}});
-window.addEventListener('focus',()=>{if(state.user)void refreshLive()});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user)void refreshLive()});
+// The database change stream updates in place; focus/visibility must not redraw the portal.
+// Refresh session cards when the page becomes visible, only if the server data changed.
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user&&state.page==='live-training')void mountLiveTraining()});
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||!state.user)return;
  if(event.data?.type==='ae-player-exit'){go('courses');return}
