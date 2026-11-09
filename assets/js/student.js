@@ -124,7 +124,14 @@ async function mountLiveTraining(){
   }).join('')+'</div>':'<div class="empty"><strong>No live sessions available yet</strong><p>Sessions will appear when a class is scheduled for a course you are enrolled in.</p></div>';
   const change=async(button,action,id)=>{
    button.disabled=true;
-   try{await liveTrainingApi(action,{session_id:id});notify(action==='register'?'Your seat is reserved.':'Your registration has been cancelled.');await mountLiveTraining()}
+   try{
+    const result=await liveTrainingApi(action,{session_id:id});
+    const delivery=result.notifications||{};
+    const message=action==='register'?'Your seat is reserved.':'Your registration has been cancelled.';
+    const emailFailed=result.notification_attempted&&(delivery.student!=='sent'||delivery.admin!=='sent');
+    notify(emailFailed?message+' Email delivery needs attention; your registration was saved.':result.notification_attempted?message+' Confirmation emails were sent.':message,emailFailed);
+    await mountLiveTraining();
+   }
    catch(error){notify(error.message,true);button.disabled=false}
   };
   holder.querySelectorAll('[data-live-register]').forEach(button=>button.onclick=()=>change(button,'register',button.dataset.liveRegister));
