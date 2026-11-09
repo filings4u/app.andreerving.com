@@ -289,6 +289,19 @@ async function init(){
  $('lesson-prev').onclick=()=>showLesson(position-1);$('lesson-next').onclick=()=>showLesson(position+1);$('lesson-complete').onclick=complete;document.querySelectorAll('[data-rc-tab]').forEach(b=>b.onclick=()=>setClassroomTab(b.dataset.rcTab));document.querySelectorAll('.rc-global-nav a[href="#rc-resources-pane"]').forEach(a=>a.onclick=e=>{e.preventDefault();setClassroomTab('resources');$('rc-tab-nav').scrollIntoView({behavior:'smooth',block:'start'})});
  const desired=params.get('lesson'),start=Math.max(0,lessons.findIndex(l=>l.id===desired));await showLesson(start);
 }
+// Phone-sized classroom outline: expand lessons without leaving the player.
+const outlineToggle=document.getElementById('ae-course-outline-toggle');
+const outlinePanel=document.getElementById('ae-mobile-course-outline');
+function setOutlineOpen(open){
+ const enabled=!!open&&window.matchMedia('(max-width:680px)').matches;
+ document.body.classList.toggle('ae-course-outline-open',enabled);
+ outlineToggle?.setAttribute('aria-expanded',String(enabled));
+ if(outlineToggle)outlineToggle.textContent=enabled?'✕ Close lessons':'☰ Lessons';
+}
+outlineToggle?.addEventListener('click',()=>setOutlineOpen(!document.body.classList.contains('ae-course-outline-open')));
+outlinePanel?.addEventListener('click',e=>{if(e.target.closest('[data-lesson],a[data-lesson],.ae-outline-step'))setOutlineOpen(false)});
+window.addEventListener('resize',()=>{if(window.innerWidth>680)setOutlineOpen(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('ae-course-outline-open')){setOutlineOpen(false);outlineToggle?.focus()}});
 const classroomTimeout=setTimeout(()=>{if($('lesson-view')?.hidden){message('The classroom is taking too long to load. Check your connection, sign in again, or reopen your course from My Courses.')}},14000);
 const embedded=params.get('embedded')==='1';
 if(embedded){
