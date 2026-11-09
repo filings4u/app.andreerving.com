@@ -234,3 +234,9 @@ body.ae-classroom-route .ae-classroom-frame{flex:1 1 auto;height:auto!important;
 .course-card .ae-extend-button:hover{background:#b8892d!important;border-color:#b8892d!important}
 .course-card .ae-extend-button:disabled{opacity:.7;cursor:wait}
 .course-card .ae-extend-button:focus-visible{outline:3px solid #d7b56e;outline-offset:2px}
+
+/* Brand-aligned primary customer actions; secondary navigation stays navy. */
+.action:not(.secondary):not(.danger),button.primary{background:#c99732;color:#142e4c;border-color:#c99732}
+.action:not(.secondary):not(.danger):hover,button.primary:hover{background:#b68425;color:#142e4c;border-color:#b68425}
+body.ae-dashboard-view .course-card .action{background:#c99732;color:#142e4c;border-color:#c99732}
+body.ae-dashboard-view .course-card .action:hover{background:#b68425;color:#142e4c}
