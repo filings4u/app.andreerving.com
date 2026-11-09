@@ -87,7 +87,7 @@ function coursesPage(){return heading('My courses','Access your programs and tra
 function liveTrainingPage(){
  return heading('Live Training Sessions','Register for instructor-led sessions, review your training schedule, and join Microsoft Teams.')+
  '<section class="panel ae-live-training-panel"><div class="ae-live-training-header"><div><span class="eyebrow">FREIGHT BROKER TRAINING / LIVE LEARNING</span><h2>Upcoming live sessions</h2><p class="muted">Select an available session to reserve your seat. Your meeting link opens 30 minutes before class.</p></div><button class="action secondary" id="ae-live-refresh" type="button">Refresh sessions</button></div><div id="ae-live-training-sessions"><p class="muted">Loading live training sessions…</p></div></section>'+
- '<section class="panel ae-live-training-help"><h2>How live training works</h2><p>Choose a session, register to reserve a seat, then use <strong>Join Microsoft Teams</strong> when the class opens. Dates display in your local time. Active enrollment in the associated course is required.</p></section>';
+ '<section class="panel ae-live-training-help"><h2>How live training works</h2><p>Choose a session, register to reserve a seat, then use <strong>Join Meeting</strong> when the class opens. Dates display in your local time. Active enrollment in the associated course is required.</p></section>';
 }
 async function liveTrainingApi(action,body={}){
  const {data,error}=await db.functions.invoke('andre-live-training',{body:{action,...body}});
@@ -118,7 +118,7 @@ async function mountLiveTraining(){
     '<div class="ae-live-session-details"><span><strong>When:</strong> '+esc(fmt(session.start_at,{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}))+' – '+esc(fmt(session.end_at,{hour:'numeric',minute:'2-digit'}))+'</span><span><strong>Training timezone:</strong> '+esc(session.timezone||'America/Chicago')+'</span><span><strong>Instructor:</strong> '+esc(session.host_name||'Andre Erving Training')+'</span><span><strong>Seats remaining:</strong> '+space+' of '+session.capacity+'</span></div>'+
     (session.registered?'<p class="ae-live-registered">✓ You are registered</p>':'')+
     '<div class="row-actions ae-live-session-actions">'+(session.registered?
-       '<button type="button" class="action" data-live-join="'+esc(session.id)+'" '+(joinOpen?'':'disabled')+'>Join Microsoft Teams</button><button type="button" class="action secondary" data-live-cancel="'+esc(session.id)+'">Cancel registration</button>':
+       '<button type="button" class="action" data-live-join="'+esc(session.id)+'" '+(joinOpen?'':'disabled')+'>Join Meeting</button><button type="button" class="action secondary" data-live-cancel="'+esc(session.id)+'">Cancel registration</button>':
        '<button type="button" class="action" data-live-register="'+esc(session.id)+'" '+(space===0||now>=start?'disabled':'')+'>Register for session</button>')+'</div>'+
     (session.registered&&!joinOpen?'<p class="muted">Join opens 30 minutes before the session starts.</p>':'')+'</article>';
   }).join('')+'</div>':'<div class="empty"><strong>No live sessions available yet</strong><p>Sessions will appear when a class is scheduled for a course you are enrolled in.</p></div>';
