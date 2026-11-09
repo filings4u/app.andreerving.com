@@ -21,7 +21,7 @@ function render(){
  root.querySelectorAll("[data-register]").forEach(b=>b.onclick=()=>change(b,"register",b.dataset.register));
  root.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>change(b,"unregister",b.dataset.cancel));
  root.querySelectorAll("[data-join]").forEach(b=>b.onclick=async()=>{
-  b.disabled=true;try{const s=await api("join",{session_id:b.dataset.join});window.open(s.url,"_blank","noopener,noreferrer");status("Joining "+s.title+" in Microsoft Teams.")}catch(e){status(e.message,true)}finally{b.disabled=false}
+  b.disabled=true;try{const s=await api("join",{session_id:b.dataset.join});window.open(s.url,"_blank","noopener,noreferrer");status("Joining "+s.title+".")}catch(e){status(e.message,true)}finally{b.disabled=false}
  });
 }
 async function change(button,action,id){button.disabled=true;try{await api(action,{session_id:id});await load();status(action==="register"?"You're registered for this live session.":"Registration cancelled.")}catch(e){status(e.message,true)}finally{button.disabled=false}}
