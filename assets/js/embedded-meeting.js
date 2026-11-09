@@ -43,7 +43,7 @@ export function createEmbeddedMeeting({root,api,sessionId,escapeHTML,onExit}){
    if(!remoteRenderers.size){const e=$('ae-room-empty');if(e)e.hidden=false}
  }
  async function cameraPreview(){
-   if(!cameraOn||!localVideo)return;
+   if(!localVideo)return;
    const stage=$('ae-room-preview');if(!stage)return;
    localRenderer?.dispose();localRenderer=new VideoStreamRenderer(localVideo);
    const view=await localRenderer.createView({scalingMode:'Crop'});localView=view;
