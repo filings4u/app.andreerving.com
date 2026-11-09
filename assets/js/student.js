@@ -146,7 +146,7 @@ async function mountEmbeddedRoom(){
  const root=$('ae-embedded-room'),id=state.meetingId;
  if(!root||!id||state.page!=='meeting')return;
  try{
-  const {createEmbeddedMeeting}=await import('./embedded-meeting.js?v=20261109-lobby-clear');
+  const {createEmbeddedMeeting}=await import('./embedded-meeting.js?v=manual-teams-fallback-20261109');
   if(state.page!=='meeting'||state.meetingId!==id||!root.isConnected)return;
   activeMeetingRoom=createEmbeddedMeeting({root,api:liveTrainingApi,sessionId:id,escapeHTML:esc,onExit:()=>go('live-training')});
  }catch(e){
