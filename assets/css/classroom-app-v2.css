@@ -105,3 +105,7 @@ body.ae-focus-mode .rc-tab-pane{max-width:none}
 }
 .rc-module-toggle:focus-visible{outline:2px solid #edc46f;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.rc-module-toggle .rc-module-caret{transition:none!important}}
+
+/* Instructor/student classroom primary action color */
+.rc-rail-primary{background:#c99732!important;color:#122c49!important;border-color:#c99732!important}
+.rc-rail-primary:hover{background:#b68425!important;color:#122c49!important}
