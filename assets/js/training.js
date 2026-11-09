@@ -270,13 +270,20 @@ async function init(){
  document.body.classList.add('ae-classroom-authorized');
  const gate=$('classroom-access-gate');if(gate)gate.hidden=true;
  const res=await Promise.all([
- db.from('courses').select('title').eq('id',courseId).single(),
+ db.from('courses').select('title,status').eq('id',courseId).single(),
  db.from(adminPreview?'course_modules':'published_course_modules').select('id,title,description,sort_order').eq('course_id',courseId).order('sort_order'),
  db.from(adminPreview?'course_lessons':'published_course_lessons').select('id,module_id,title,lesson_type,content_html,video_url,resource_url,allow_download,duration_minutes,sort_order').eq('course_id',courseId).order('sort_order'),
  adminPreview?Promise.resolve({data:[],error:null}):db.from('lesson_progress').select('id,lesson_id,completed').eq('course_id',courseId).eq('user_id',user.id)
  ]);
  if(res.some(x=>x.error)){message('Unable to load this course. Please refresh.');return}
- $('course-title').textContent=res[0].data.title;modules=res[1].data||[];const rows=res[2].data||[];progress=res[3].data||[];
+ if(!adminPreview&&res[0].data.status!=='published'){message('This course is not currently published.');return}
+ let publishedTitle=res[0].data.title;
+ if(!adminPreview){
+   const p=await db.from('course_publications').select('published_title,revision').eq('course_id',courseId).maybeSingle();
+   if(p.error||!p.data||!p.data.revision){message('This course is not yet published.');return}
+   publishedTitle=p.data.published_title||publishedTitle;
+ }
+ $('course-title').textContent=publishedTitle;modules=res[1].data||[];const rows=res[2].data||[];progress=res[3].data||[];
  lessons=modules.flatMap(m=>rows.filter(l=>l.module_id===m.id));
  if(!lessons.length){message('No lessons have been added to this course yet.');renderOutline();return}
  $('lesson-prev').onclick=()=>showLesson(position-1);$('lesson-next').onclick=()=>showLesson(position+1);$('lesson-complete').onclick=complete;document.querySelectorAll('[data-rc-tab]').forEach(b=>b.onclick=()=>setClassroomTab(b.dataset.rcTab));document.querySelectorAll('.rc-global-nav a[href="#rc-resources-pane"]').forEach(a=>a.onclick=e=>{e.preventDefault();setClassroomTab('resources');$('rc-tab-nav').scrollIntoView({behavior:'smooth',block:'start'})});
