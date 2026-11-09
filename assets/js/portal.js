@@ -27,9 +27,17 @@ async function render(){
   const {data,error}=await db.from(table).select(columns).limit(100);
   if(error){holder.textContent='Unable to load records.';continue}
   if(!data?.length){holder.textContent=table==='orders'?'You have no orders yet.':table==='course_enrollments'?'You are not enrolled in a course yet.': 'No documents have been shared with you yet.';if(table==='course_enrollments'){const link=document.createElement('a');link.href='https://andreerving.com/courses.html';link.textContent='Explore courses';holder.append(document.createElement('br'),link)}continue}
+  let publishedCourseNames=new Map();
+  if(table==='course_enrollments'){
+   const ids=[...new Set(data.map(row=>row.course_id).filter(Boolean))];
+   if(ids.length){
+    const {data:releases}=await db.from('course_publications').select('course_id,published_title').in('course_id',ids);
+    publishedCourseNames=new Map((releases||[]).map(row=>[row.course_id,row.published_title]));
+   }
+  }
   for(const record of data){
    const card=document.createElement('div');card.className='item';
-   const summary=document.createElement('p');summary.textContent=table==='customer_documents'?record.title:table==='orders'?record.order_number+' · '+record.status+' · $'+record.total:(record.courses?.title||'Course')+' · '+record.status;card.append(summary);
+   const summary=document.createElement('p');summary.textContent=table==='customer_documents'?record.title:table==='orders'?record.order_number+' · '+record.status+' · $'+record.total:(publishedCourseNames.get(record.course_id)||record.courses?.title||'Course')+' · '+record.status;card.append(summary);
    if(table==='course_enrollments'&&record.status==='active'){
     const link=document.createElement('a');link.href='training.html?course='+encodeURIComponent(record.course_id);link.textContent='Open training';card.append(link);
    }
