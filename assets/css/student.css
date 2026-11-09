@@ -31,3 +31,7 @@
 .student-brand .customer-sidebar-logo{display:block;max-width:150px;width:100%;height:auto;max-height:68px;object-fit:contain;object-position:left center;flex:0 1 auto}
 .student-brand .student-brand-name{display:block;font-size:9px;letter-spacing:.09em;color:#b2c5dd;white-space:nowrap}
 @media(max-width:740px){.auth-brand .customer-login-logo{max-width:240px;max-height:74px}.student-brand .customer-sidebar-logo{max-width:120px}}
+
+/* Approved Andre Erving gold primary actions */
+.auth-card button.primary,.primary,.action:not(.secondary):not(.danger){background:#c99732;color:#132c49;border-color:#c99732}
+.action:not(.secondary):not(.danger):hover,.auth-card button.primary:hover{background:#b58424;color:#132c49;border-color:#b58424}
