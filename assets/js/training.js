@@ -271,8 +271,8 @@ async function init(){
  const gate=$('classroom-access-gate');if(gate)gate.hidden=true;
  const res=await Promise.all([
  db.from('courses').select('title').eq('id',courseId).single(),
- db.from('course_modules').select('id,title,description,sort_order').eq('course_id',courseId).order('sort_order'),
- db.from('course_lessons').select('id,module_id,title,lesson_type,content_html,video_url,resource_url,allow_download,duration_minutes,sort_order').eq('course_id',courseId).order('sort_order'),
+ db.from(adminPreview?'course_modules':'published_course_modules').select('id,title,description,sort_order').eq('course_id',courseId).order('sort_order'),
+ db.from(adminPreview?'course_lessons':'published_course_lessons').select('id,module_id,title,lesson_type,content_html,video_url,resource_url,allow_download,duration_minutes,sort_order').eq('course_id',courseId).order('sort_order'),
  adminPreview?Promise.resolve({data:[],error:null}):db.from('lesson_progress').select('id,lesson_id,completed').eq('course_id',courseId).eq('user_id',user.id)
  ]);
  if(res.some(x=>x.error)){message('Unable to load this course. Please refresh.');return}
