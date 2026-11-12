@@ -5,8 +5,9 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const adminPreview=params.get('preview')==='admin';
 const uid=v=>/^[0-9a-f-]{36}$/i.test(v||'');
 const type=t=>({text:'Article',video:'Video',download:'Download',quiz:'Quiz'}[t]||'Lesson');
-let user=null,modules=[],lessons=[],progress=[],position=0,working=false,activeVideoPlayer=null;
+let user=null,modules=[],lessons=[],progress=[],position=0,working=false,activeVideoPlayer=null,completionOrder='free';
 const done=id=>!!progress.find(p=>p.lesson_id===id&&p.completed);
+const unlocked=index=>adminPreview||completionOrder!=='sequential'||index===0||lessons.slice(0,index).every(l=>done(l.id));
 function message(text){const gate=$('classroom-access-message');if(gate&&!document.body.classList.contains('ae-classroom-authorized'))gate.textContent=text;$('player-status').hidden=false;$('player-status').textContent=text}
 function safeHTML(input){
  const doc=new DOMParser().parseFromString(String(input||''),'text/html'),allow=new Set(['P','BR','STRONG','B','EM','I','U','H2','H3','H4','UL','OL','LI','BLOCKQUOTE','A']);
@@ -86,8 +87,8 @@ function renderOutline(){
    const current=indices.includes(position);
    const collapsed=collapsedModules.has(m.id);
    return '<section class="ae-outline-section"><button type="button" class="rc-module-toggle" data-module-toggle="'+esc(m.id)+'" aria-expanded="'+(!collapsed)+'"><span class="rc-module-index">'+String(mi+1).padStart(2,'0')+'</span><span class="rc-module-name">'+esc(m.title)+'<small style="display:block;font-weight:400;color:#b6cae0">'+indices.filter(i=>done(lessons[i].id)).length+'/'+indices.length+' lessons</small></span><span class="rc-module-caret" aria-hidden="true"></span></button><div class="rc-module-lessons" '+(collapsed?'hidden':'')+'>'+indices.map((i)=>{
-     const l=lessons[i],completed=done(l.id);
-     return '<button type="button" data-lesson-index="'+i+'" class="ae-outline-step '+(i===position?'active ':'')+(completed?'completed':'')+'" '+(i===position?'aria-current="step"':'')+'><span class="ae-step-state">'+(completed?'✓':(l.lesson_type==='quiz'?'?':String((l.sort_order||0)/10)))+'</span><span class="ae-step-copy"><strong>'+esc(l.title)+'</strong><small>'+type(l.lesson_type)+(l.duration_minutes?' · '+l.duration_minutes+' min':'')+'</small></span></button>';
+     const l=lessons[i],completed=done(l.id),locked=!unlocked(i);
+     return '<button type="button" data-lesson-index="'+i+'" class="ae-outline-step '+(i===position?'active ':'')+(completed?'completed ':'')+(locked?'ae-lesson-locked':'')+'" '+(i===position?'aria-current="step"':'')+(locked?' disabled title="Complete previous lessons first"':'')+'><span class="ae-step-state">'+(completed?'✓':locked?'🔒':(l.lesson_type==='quiz'?'?':String((l.sort_order||0)/10)))+'</span><span class="ae-step-copy"><strong>'+esc(l.title)+'</strong><small>'+(locked?'Complete previous lessons first':type(l.lesson_type)+(l.duration_minutes?' · '+l.duration_minutes+' min':''))+'</small></span></button>';
    }).join('')+'</div></section>';
  }).join('');
  $('modules').querySelectorAll('[data-lesson-index]').forEach(b=>b.onclick=()=>showLesson(Number(b.dataset.lessonIndex)));
@@ -221,12 +222,13 @@ async function enhanceClassroom(lesson){
 }
 async function showLesson(index){
  if(index<0||index>=lessons.length)return;
+ if(!unlocked(index)){message('Complete previous lessons to unlock this lesson.');return}
  if(activeVideoPlayer){activeVideoPlayer.destroy();activeVideoPlayer=null}clearPlayerMedia();position=index;const lesson=lessons[index];modules.forEach(m=>collapsedModules.add(m.id));collapsedModules.delete(lesson.module_id);
  $('lesson-view').hidden=false;$('player-status').hidden=true;
  $('lesson-title').textContent=lesson.title;$('lesson-overline').textContent='LESSON '+(index+1)+' OF '+lessons.length+' · '+type(lesson.lesson_type).toUpperCase();
  $('lesson-subtitle').textContent=(modules.find(m=>m.id===lesson.module_id)?.title||'Course')+' · '+(lesson.duration_minutes||0)+' min';
  $('lesson-media').innerHTML='';$('lesson-body').innerHTML='';
- $('lesson-prev').disabled=index===0;$('lesson-next').disabled=index===lessons.length-1;
+ $('lesson-prev').disabled=index===0;$('lesson-next').disabled=index===lessons.length-1||!unlocked(index+1);
  $('lesson-complete').hidden=adminPreview;
  $('lesson-complete').disabled=adminPreview||done(lesson.id);$('lesson-complete').textContent=done(lesson.id)?'✓ Completed':'Mark complete ✓';
  if(lesson.lesson_type==='quiz')renderQuiz(lesson);
@@ -248,7 +250,7 @@ async function complete(){
    const q=prior?db.from('lesson_progress').update(value).eq('id',prior.id).select('id,lesson_id,completed'):
    db.from('lesson_progress').insert({...value,user_id:user.id,course_id:courseId,lesson_id:lesson.id}).select('id,lesson_id,completed');
    const {data,error}=await q;if(error||!data?.length)throw error||new Error('Saving progress was not permitted');
-   if(prior)prior.completed=true;else progress.push(data[0]);$('lesson-complete').textContent='✓ Completed';renderOutline();
+   if(prior)prior.completed=true;else progress.push(data[0]);$('lesson-complete').textContent='✓ Completed';$('lesson-next').disabled=position>=lessons.length-1||!unlocked(position+1);renderOutline();
    if(window.parent!==window){window.parent.postMessage({type:'ae-lesson-completed',courseId,lessonId:lesson.id,completed:lessons.filter(l=>done(l.id)).length,total:lessons.length},location.origin)}
  }catch(e){message('Unable to save progress: '+e.message);$('lesson-complete').disabled=false}finally{working=false}
 }
@@ -279,15 +281,18 @@ async function init(){
  if(!adminPreview&&res[0].data.status!=='published'){message('This course is not currently published.');return}
  let publishedTitle=res[0].data.title;
  if(!adminPreview){
-   const p=await db.from('course_publications').select('published_title,revision').eq('course_id',courseId).maybeSingle();
+   const p=await db.from('course_publications').select('published_title,revision,published_completion_order').eq('course_id',courseId).maybeSingle();
    if(p.error||!p.data||!p.data.revision){message('This course is not yet published.');return}
    publishedTitle=p.data.published_title||publishedTitle;
+   completionOrder=p.data.published_completion_order==='sequential'?'sequential':'free';
  }
  $('course-title').textContent=publishedTitle;modules=res[1].data||[];const rows=res[2].data||[];progress=res[3].data||[];
  lessons=modules.flatMap(m=>rows.filter(l=>l.module_id===m.id));
  if(!lessons.length){message('No lessons have been added to this course yet.');renderOutline();return}
  $('lesson-prev').onclick=()=>showLesson(position-1);$('lesson-next').onclick=()=>showLesson(position+1);$('lesson-complete').onclick=complete;document.querySelectorAll('[data-rc-tab]').forEach(b=>b.onclick=()=>setClassroomTab(b.dataset.rcTab));document.querySelectorAll('.rc-global-nav a[href="#rc-resources-pane"]').forEach(a=>a.onclick=e=>{e.preventDefault();setClassroomTab('resources');$('rc-tab-nav').scrollIntoView({behavior:'smooth',block:'start'})});
- const desired=params.get('lesson'),start=Math.max(0,lessons.findIndex(l=>l.id===desired));await showLesson(start);
+ const desired=params.get('lesson'),requested=Math.max(0,lessons.findIndex(l=>l.id===desired));
+ const start=unlocked(requested)?requested:Math.max(0,lessons.findIndex((l,i)=>!done(l.id)&&unlocked(i)));
+ await showLesson(start);
 }
 // Phone-sized classroom outline: expand lessons without leaving the player.
 const outlineToggle=document.getElementById('ae-course-outline-toggle');
