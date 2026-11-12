@@ -139,3 +139,9 @@ body.ae-focus-mode .rc-tab-pane{max-width:none}
  .ae-course-outline-toggle{padding:8px;font-size:11px}
  .ae-player-exit{font-size:10px}
 }
+
+/* Sequential course progression: distinguish unavailable lessons */
+.ae-outline-step.ae-lesson-locked{opacity:.58;cursor:not-allowed;background:rgba(132,149,170,.06)}
+.ae-outline-step.ae-lesson-locked .ae-step-state{font-size:14px;filter:grayscale(.5)}
+.ae-outline-step.ae-lesson-locked small{color:#a6b3c3}
+.ae-outline-step.ae-lesson-locked:hover{transform:none;box-shadow:none}
