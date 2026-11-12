@@ -29,3 +29,27 @@
 .ae-cert-button:focus-visible{outline:3px solid #c99425;outline-offset:2px}
 @media(max-width:650px){.ae-certificate-border{border-width:7px;outline-width:3px;outline-offset:-11px}.ae-certificate-brand img{padding:4px 5px}.ae-certificate-inner{border-width:1px}}
 @media print{@page{size:A4 landscape;margin:0}body>*:not(.ae-certificate-print){display:none!important}.ae-certificate{box-shadow:none;width:297mm;height:210mm;max-width:none}.ae-certificate-print{display:block!important}}
+
+/* Student certificate library */
+#student-certificate-area{display:grid;gap:22px;min-width:0}
+.ae-student-cert-intro{background:linear-gradient(120deg,#102844,#214a75);color:#fff;padding:29px 33px;border-radius:15px}
+.ae-student-cert-intro h2{color:#fff;margin:8px 0 10px;font-size:28px}
+.ae-student-cert-intro p{font-size:13px;color:#ccdaea;line-height:1.75;max-width:730px;margin:0}
+.ae-cert-overline{color:#d7a443;font-size:10px;letter-spacing:.16em;font-weight:850;font-family:Arial,sans-serif}
+.ae-student-cert-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.ae-student-cert-card{border:1px solid #d8e4f0;border-radius:13px;background:#fff;padding:25px}
+.ae-student-cert-card h3{font-size:20px;color:#153654;line-height:1.4;margin:12px 0}
+.ae-student-cert-card p{font-size:12px;color:#637d97;line-height:1.7}
+.ae-student-cert-empty,.ae-student-cert-pending{background:#fff;border:1px solid #dce6f0;border-radius:13px;padding:24px}
+.ae-student-cert-empty strong{color:#24425d;font-size:17px}
+.ae-student-cert-empty p,.ae-student-cert-pending p{font-size:12px;color:#71849b;line-height:1.7}
+.ae-student-cert-pending h3{color:#153654;font-size:19px}
+.ae-student-cert-pending-row{display:flex;align-items:center;justify-content:space-between;gap:15px;border-top:1px solid #edf1f5;padding:15px 0;font-size:13px;font-weight:700}
+.ae-student-cert-view{background:#f1f5fa;border:1px solid #d9e4ef;border-radius:13px;padding:20px;min-width:0}
+.ae-student-cert-view[hidden]{display:none}
+.ae-student-cert-view-top{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}
+.ae-student-cert-view-top h3{font-size:20px;color:#193a58}
+.ae-cert-id-note{text-align:center;font-size:12px;color:#6c839b;margin:17px 0 0}
+#student-cert-status{font-size:13px;color:#2c704b;font-weight:750}
+#student-cert-status.error,.ae-student-cert-error{color:#b44845}
+@media(max-width:780px){.ae-student-cert-grid{grid-template-columns:1fr}.ae-student-cert-intro{padding:25px 21px}.ae-student-cert-view{padding:8px}.ae-student-cert-pending-row{align-items:flex-start;flex-direction:column}}
