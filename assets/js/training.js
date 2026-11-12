@@ -253,15 +253,7 @@ async function complete(){
    if(prior)prior.completed=true;else progress.push(data[0]);$('lesson-complete').textContent='✓ Completed';$('lesson-next').disabled=position>=lessons.length-1||!unlocked(position+1);renderOutline();
    if(lessons.length&&lessons.every(l=>done(l.id))){
      const completion=$('ae-course-completion');
-     if(completion)completion.textContent='Course completed! Preparing your certificate…';
-     try{
-       const {data:cert,error:certError}=await db.functions.invoke('andre-certificates',{body:{action:'issue_mine',courseId}});
-       if(certError||!cert?.certificate)throw certError||new Error('Certificate issuance unavailable');
-       if(completion){completion.innerHTML='Congratulations! All lessons and quizzes are complete. Your certificate <strong>'+esc(cert.certificate.certificate_number)+'</strong> is ready. <a href="/#/certificates" target="_top">View and download certificate →</a>'}
-     }catch(error){
-       if(completion)completion.innerHTML='Congratulations! All lessons and quizzes are complete. <a href="/#/certificates" target="_top">Open My Certificates to check issuance →</a>';
-       console.warn('Certificate issuance after completion:',error);
-     }
+     if(completion)completion.innerHTML='Congratulations! You have completed every lesson and quiz in this course. Your certificate is issued automatically. <a href="/#/certificates" target="_top">View My Certificates →</a>';
    }
    if(window.parent!==window){window.parent.postMessage({type:'ae-lesson-completed',courseId,lessonId:lesson.id,completed:lessons.filter(l=>done(l.id)).length,total:lessons.length},location.origin)}
  }catch(e){message('Unable to save progress: '+e.message);$('lesson-complete').disabled=false}finally{working=false}
