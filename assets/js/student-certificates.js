@@ -20,7 +20,7 @@ export function createStudentCertificates({db,notify,root}){
     (issued.length?'<div class="ae-student-cert-grid">'+issued.map(c=>
       '<article class="ae-student-cert-card"><span class="ae-cert-overline">CERTIFICATE ISSUED</span><h3>'+esc(c.course_title)+'</h3><p>Certificate number: <strong>'+esc(c.certificate_number)+'</strong></p><p>Issued '+date(c.issued_at)+'</p><div class="ae-cert-controls"><button type="button" class="ae-cert-button primary" data-student-cert="'+c.id+'">View certificate</button></div></article>'
     ).join("")+'</div>':'<section class="ae-student-cert-empty"><strong>No certificates issued yet</strong><p>Complete the lessons and quizzes in an enrolled course to earn your first certificate.</p></section>')+
-    (pending.length?'<section class="ae-student-cert-pending"><h3>Courses awaiting certificate issuance</h3><p>Once you finish a course, use Check Completion to verify and issue your certificate.</p>'+pending.map(c=>'<div class="ae-student-cert-pending-row"><span>'+esc(c.title)+'</span><button class="ae-cert-button" type="button" data-cert-check="'+c.courseId+'">Check completion</button></div>').join("")+'</section>':'')+
+    (pending.length?'<section class="ae-student-cert-pending"><h3>Courses in progress</h3><p>Your certificate will be issued automatically after you complete every required lesson and quiz.</p>'+pending.map(c=>'<div class="ae-student-cert-pending-row"><span>'+esc(c.title)+'</span><span>Certificate pending completion</span></div>').join("")+'</section>':'')+
     '<section id="student-cert-view" class="ae-student-cert-view" hidden></section><p id="student-cert-status" role="status" aria-live="polite"></p>';
    const notice=(text,error=false)=>{const el=holder.querySelector("#student-cert-status");if(el){el.textContent=text;el.classList.toggle("error",error)}else notify(text,error)};
    holder.querySelectorAll("[data-student-cert]").forEach(btn=>btn.onclick=()=>{
@@ -31,14 +31,7 @@ export function createStudentCertificates({db,notify,root}){
     view.querySelector("#student-cert-download").onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{await downloadCertificate(view.querySelector(".ae-certificate"),current.certificate_number);notice("Certificate PDF downloaded")}catch(e){notice("PDF download failed: "+e.message,true)}finally{button.disabled=false}};
     view.scrollIntoView({behavior:"smooth",block:"start"});
    });
-   holder.querySelectorAll("[data-cert-check]").forEach(btn=>btn.onclick=async()=>{
-    btn.disabled=true;try{
-      const result=await api("issue_mine",{courseId:btn.dataset.certCheck});
-      notify("Certificate "+result.certificate.certificate_number+" is ready.");
-      await load();
-      holder.querySelector('[data-student-cert="'+result.certificate.id+'"]')?.click();
-    }catch(e){notice(e.message||"Not eligible yet",true);btn.disabled=false}
-   });
+
   }catch(e){if(holder.isConnected)holder.innerHTML='<div role="alert" class="ae-student-cert-error">'+esc(e.message)+'</div><button class="ae-cert-button" id="student-certificate-retry">Retry</button>';holder.querySelector("#student-certificate-retry")?.addEventListener("click",load)}
  }
  return {load};
