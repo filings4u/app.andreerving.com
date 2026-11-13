@@ -37,7 +37,7 @@ function generatePages(order,items,logo){
  for(let offset=0;offset<items.length;offset+=chunkSize){
   const pageNumber=pages.length+1,last=offset+chunkSize>=items.length;
   let commands=box(0,0,PAGE_W,PAGE_H,'1 1 1');
-  if(logo){const width=332,height=Math.min(78,332*logo.height/logo.width);
+  if(logo){const scale=Math.min(220/logo.width,52/logo.height);const width=logo.width*scale,height=logo.height*scale;
    commands+='q '+width+' 0 0 '+height+' 41 '+(697+(78-height)/2)+' cm /Brand Do Q\n';
   }else{
    commands+=box(43,715,43,43,'0.11 0.29 0.77')+txt('AE',51,729,20,true,'1 1 1');
