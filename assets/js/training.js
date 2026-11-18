@@ -123,28 +123,53 @@ async function renderDownload(lesson){
  }
  const button=document.createElement("button");button.type="button";button.className="ae-lesson-download";
  button.textContent="↓ Download course document";body.append(button);
+ const errorStatus=document.createElement("p");errorStatus.className="ae-lesson-download-status";errorStatus.setAttribute("role","alert");body.append(errorStatus);
  button.onclick=async()=>{
-  button.disabled=true;button.textContent="Preparing download…";
+  button.disabled=true;button.textContent="Preparing download…";errorStatus.textContent="";
   try{
+   let downloadUrl="",temporaryUrl="";
+   let filename="course-resource";
+   const path=ref.startsWith("lmsfile:")?ref.slice(8):ref.startsWith("r2:")?ref.slice(3):"";
+   if(path){
+    const name=path.split("/").pop();
+    if(name)filename=decodeURIComponent(name).replace(/[\\/:*?"<>|]/g,"_");
+   }
    if(ref.startsWith("r2:")){
     const {data:{session}}=await db.auth.getSession();
-    if(!session?.access_token)throw Error("Session expired");
+    if(!session?.access_token)throw Error("Session expired. Please sign in again.");
     const response=await fetch(r2Gateway+"/download",{method:"POST",
       headers:{"Authorization":"Bearer "+session.access_token,"Content-Type":"application/json"},
       body:JSON.stringify({courseId,lessonId:lesson.id,path:ref})});
-    if(!response.ok)throw Error("Download not authorized");
-    const url=URL.createObjectURL(await response.blob());
-    const link=document.createElement("a");link.href=url;link.download="course-resource";document.body.append(link);link.click();link.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    if(!response.ok)throw Error("Document download failed ("+response.status+").");
+    const blob=await response.blob();
+    if(!blob.size)throw Error("The document is empty.");
+    downloadUrl=temporaryUrl=URL.createObjectURL(blob);
    }else if(ref.startsWith("lmsfile:")){
-    const filePath=ref.slice(8);if(!filePath.startsWith(courseId+"/")||filePath.includes(".."))throw Error("Invalid file");
-    const {data,error}=await db.storage.from("andreerving-lms-resources").createSignedUrl(filePath,60,{download:true});
-    if(error||!data?.signedUrl)throw Error("Download unavailable");
-    window.open(data.signedUrl,"_blank","noopener,noreferrer");
-   }else if(/^https:\/\//i.test(ref)){window.open(ref,"_blank","noopener,noreferrer")}
-   else throw Error("Invalid resource reference");
-  }catch(error){message(error?.message||"Unable to download the document")}
-  finally{if(button.isConnected){button.disabled=false;button.textContent="↓ Download course document"}}
+    const filePath=ref.slice(8);
+    if(!filePath.startsWith(courseId+"/")||filePath.includes(".."))throw Error("Invalid file reference.");
+    const {data,error}=await db.storage.from("andreerving-lms-resources").createSignedUrl(filePath,120,{download:filename});
+    if(error||!data?.signedUrl)throw Error("The document is unavailable. Please contact support.");
+    downloadUrl=data.signedUrl;
+   }else if(/^https:\/\//i.test(ref)){
+    if(!/^https:\/\//i.test(ref))throw Error("Invalid document URL.");
+    const response=await fetch(ref);
+    if(!response.ok)throw Error("Document download failed ("+response.status+").");
+    const blob=await response.blob();
+    if(!blob.size)throw Error("The document is empty.");
+    const name=new URL(ref).pathname.split("/").pop();
+    if(name)filename=decodeURIComponent(name).replace(/[\\/:*?"<>|]/g,"_");
+    downloadUrl=temporaryUrl=URL.createObjectURL(blob);
+   }else throw Error("Invalid resource reference.");
+   // A programmatically clicked link does not require opening a popup after awaits.
+   const link=document.createElement("a");link.href=downloadUrl;link.download=filename;link.style.display="none";
+   document.body.append(link);link.click();link.remove();
+   if(temporaryUrl)setTimeout(()=>URL.revokeObjectURL(temporaryUrl),30000);
+  }catch(error){
+   errorStatus.textContent=error?.message||"Unable to download the document.";
+   console.error("Course document download failed",error);
+  }finally{
+   if(button.isConnected){button.disabled=false;button.textContent="↓ Download course document"}
+  }
  };
 }
 function setClassroomTab(tab){
@@ -180,7 +205,7 @@ async function enhanceClassroom(lesson){
  const extra=module?.title?.includes('Compliance')?'<p><a href="https://www.fmcsa.dot.gov/registration/broker-registration" target="_blank" rel="noopener noreferrer">FMCSA Broker Registration — official reference ↗</a></p>':'';
  $('rc-resources-pane').innerHTML='<h2>Lesson resources</h2>'+resources+extra;
  $('rc-resource-list').innerHTML='<button type="button" class="rc-resource-row" data-rc-resource="guide">▤ &nbsp; Written lesson guide →</button>'+ (audio?'<button type="button" class="rc-resource-row" data-rc-resource="audio">♫ &nbsp; Audio narration →</button>':'') +(lesson.resource_url&&lesson.allow_download?'<button type="button" class="rc-resource-row" data-rc-resource="resources">↓ &nbsp; Instructor resource →</button>':'');
- $('rc-resource-list').querySelectorAll('[data-rc-resource]').forEach(b=>b.onclick=()=>{setClassroomTab(b.dataset.rcResource);$('rc-tab-nav').scrollIntoView({behavior:'smooth',block:'start'})});
+ $('rc-resource-list').querySelectorAll('[data-rc-resource]').forEach(b=>b.onclick=()=>{if(b.dataset.rcResource==='resources'&&lesson.lesson_type==='download'){setClassroomTab('guide');$('lesson-body').querySelector('.ae-lesson-download')?.click();return}setClassroomTab(b.dataset.rcResource);$('rc-tab-nav').scrollIntoView({behavior:'smooth',block:'start'})});
  $('rc-audio-pane').innerHTML='<h2>Listen to this lesson</h2><p>Audio narration of the lesson overview and example.</p><div id="rc-audio-tab-slot"></div>';
  const railAudio=$('rc-audio-slot');railAudio.innerHTML='<p class="rc-muted">No audio is attached to this lesson.</p>';let artUrl='',narrationUrl='';
  const next=lessons[position+1];
