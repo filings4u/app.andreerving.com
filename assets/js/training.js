@@ -151,17 +151,14 @@ async function renderDownload(lesson){
     if(error||!data?.signedUrl)throw Error("The document is unavailable. Please contact support.");
     downloadUrl=data.signedUrl;
    }else if(/^https:\/\//i.test(ref)){
-    if(!/^https:\/\//i.test(ref))throw Error("Invalid document URL.");
-    const response=await fetch(ref);
-    if(!response.ok)throw Error("Document download failed ("+response.status+").");
-    const blob=await response.blob();
-    if(!blob.size)throw Error("The document is empty.");
+    // External links may not permit cross-origin fetches; open them directly from the click.
+    downloadUrl=ref;
     const name=new URL(ref).pathname.split("/").pop();
     if(name)filename=decodeURIComponent(name).replace(/[\\/:*?"<>|]/g,"_");
-    downloadUrl=temporaryUrl=URL.createObjectURL(blob);
    }else throw Error("Invalid resource reference.");
-   // A programmatically clicked link does not require opening a popup after awaits.
+   // A real anchor avoids calling window.open after asynchronous signing.
    const link=document.createElement("a");link.href=downloadUrl;link.download=filename;link.style.display="none";
+   if(downloadUrl===ref){link.target="_blank";link.rel="noopener noreferrer";}
    document.body.append(link);link.click();link.remove();
    if(temporaryUrl)setTimeout(()=>URL.revokeObjectURL(temporaryUrl),30000);
   }catch(error){
