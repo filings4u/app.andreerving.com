@@ -144,9 +144,12 @@ async function renderDownload(lesson){
     const blob=await response.blob();
     if(!blob.size)throw Error("The document is empty.");
     downloadUrl=temporaryUrl=URL.createObjectURL(blob);
-   }else if(ref.startsWith("lmsfile:")){
-    const filePath=ref.slice(8);
+   }else if(ref.startsWith("lmsfile:")||ref.startsWith(courseId+"/library/")){
+    // The admin Document Library stores the plain course-scoped storage path.
+    const filePath=ref.startsWith("lmsfile:")?ref.slice(8):ref;
     if(!filePath.startsWith(courseId+"/")||filePath.includes(".."))throw Error("Invalid file reference.");
+    const actualName=filePath.split("/").pop();
+    if(actualName)filename=decodeURIComponent(actualName).replace(/[\\/:*?"<>|]/g,"_").replace(/^[a-f0-9]{8}-[a-f0-9-]{27,}_/i,"");
     const {data,error}=await db.storage.from("andreerving-lms-resources").createSignedUrl(filePath,120,{download:filename});
     if(error||!data?.signedUrl)throw Error("The document is unavailable. Please contact support.");
     downloadUrl=data.signedUrl;
